@@ -83,6 +83,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "Discover temples, chat with priests and communities, and book poojas — designed for devotees." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "TempleAddress — Chat & Pooja Booking" },
+      { name: "twitter:description", content: "Discover temples, chat with priests and communities, and book poojas — designed for devotees." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/25fa2266-f309-458f-aa4c-09d899b5daa5/id-preview-6ba8f836--1f38e94c-1117-4c43-9410-264893e59117.lovable.app-1784383616132.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/25fa2266-f309-458f-aa4c-09d899b5daa5/id-preview-6ba8f836--1f38e94c-1117-4c43-9410-264893e59117.lovable.app-1784383616132.png" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
