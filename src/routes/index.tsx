@@ -7,6 +7,7 @@ import {
   Flame, Sparkles, Heart, CalendarDays, CreditCard, Share2, Download,
   Image as ImageIcon, FileText, Camera, Bot, Gift, Wallet, BarChart3,
   Bell, Users, Send, X, Megaphone, Edit3,
+  Bookmark, Play, Film, Type as TypeIcon, MoreHorizontal, Volume2,
 } from "lucide-react";
 import temple1 from "@/assets/temple-1.jpg";
 import temple2 from "@/assets/temple-2.jpg";
