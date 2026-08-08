@@ -132,12 +132,12 @@ export function ListingHub({ back, start, openListings, phone }: { back: () => v
 
       <div className="p-4 space-y-3">
         <p className="text-sm text-ink-soft leading-relaxed">
-          Meenakshi will guide you step-by-step, in a simple chat — just like WhatsApp. No forms, no typing long pages.
+          Our listing helper will guide you step-by-step, in a simple chat — just like WhatsApp. No forms, no typing long pages.
         </p>
         <div className="flex items-center gap-3 p-3 rounded-2xl bg-muted">
-          <img src={meenakshi} alt="Meenakshi" width={816} height={816} loading="lazy" className="size-14 rounded-full object-cover object-top ring-2 ring-card" />
+          <img src={meenakshi} alt="Listing helper" width={816} height={816} loading="lazy" className="size-14 rounded-full object-cover object-top ring-2 ring-card" />
           <div>
-            <div className="font-bold text-ink">Meenakshi is ready to guide you.</div>
+            <div className="font-bold text-ink">Listing helper is ready to guide you.</div>
             <div className="text-sm text-ink-soft">Choose the action you want to continue with.</div>
           </div>
         </div>
@@ -264,7 +264,7 @@ export function MeenakshiFlow({ kind, phone, back, onSubmitted }: { kind: FlowKi
       <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-4 p-8 bg-cream text-center">
         <div className="size-20 rounded-full bg-verified grid place-items-center"><Check className="size-10 text-primary-foreground" /></div>
         <div className="text-2xl font-serif font-bold text-ink">Submitted for review 🙏</div>
-        <p className="text-ink-soft">Meenakshi has sent your {meta.title.toLowerCase()} to our team. You'll get a WhatsApp update on +91 {phone} once verified.</p>
+        <p className="text-ink-soft">We have sent your {meta.title.toLowerCase()} to our team. You'll get a WhatsApp update on +91 {phone} once verified.</p>
         <button onClick={onSubmitted} className="w-full py-4 rounded-2xl bg-earth text-primary-foreground text-lg font-bold shadow-soft">Back to Listings</button>
       </div>
     );
@@ -274,7 +274,7 @@ export function MeenakshiFlow({ kind, phone, back, onSubmitted }: { kind: FlowKi
     const sections = [...new Set(steps.map((s) => s.section))];
     return (
       <div className="flex-1 min-h-0 flex flex-col bg-cream">
-        <FlowHeader title="Meenakshi" sub="Review" phone={phone} lang={lang} setLang={setLang} back={() => setReview(false)} progress={1} idx={total} total={total} />
+        <FlowHeader title="Listing Helper" sub="Review" phone={phone} lang={lang} setLang={setLang} back={() => setReview(false)} progress={1} idx={total} total={total} />
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <div className="p-3 rounded-2xl bg-card ring-1 ring-border text-sm text-ink-soft">
             📋 Please review the details before submission.<br />
@@ -307,7 +307,7 @@ export function MeenakshiFlow({ kind, phone, back, onSubmitted }: { kind: FlowKi
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-chat-bg">
       <FlowHeader
-        title="Meenakshi"
+        title="Listing Helper"
         sub={active ? active.section : meta.title}
         phone={phone} lang={lang} setLang={setLang}
         back={editStep ? () => { setEditKey(null); setReview(true); } : back}
@@ -319,7 +319,7 @@ export function MeenakshiFlow({ kind, phone, back, onSubmitted }: { kind: FlowKi
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2" style={{ backgroundImage: "radial-gradient(oklch(0.9 0.02 60) 1px, transparent 1px)", backgroundSize: "18px 18px" }}>
         {!started && (
           <div className="grid place-items-center pb-2">
-            <img src={meenakshi} alt="Meenakshi" width={816} height={816} className="w-40 rounded-2xl object-cover ring-1 ring-black/5" />
+            <img src={meenakshi} alt="Listing helper" width={816} height={816} className="w-40 rounded-2xl object-cover ring-1 ring-black/5" />
           </div>
         )}
         {msgs.map((m) => (
@@ -359,7 +359,7 @@ function FlowHeader({ title, sub, phone, lang, setLang, back, progress, idx, tot
       <div className="flex items-center gap-2">
         <button onClick={back} className="size-9 grid place-items-center"><ArrowLeft className="size-5" /></button>
         <div className="relative shrink-0">
-          <img src={meenakshi} alt="Meenakshi" width={816} height={816} className="size-10 rounded-full object-cover object-top ring-2 ring-cream/40" />
+          <img src={meenakshi} alt="Listing helper" width={816} height={816} className="size-10 rounded-full object-cover object-top ring-2 ring-cream/40" />
           <span className="absolute bottom-0 right-0 size-3 rounded-full bg-verified ring-2 ring-earth" />
         </div>
         <div className="flex-1 min-w-0">
