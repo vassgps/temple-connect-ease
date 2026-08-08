@@ -48,11 +48,34 @@ export type Submission = {
   place: string;
   status: "pending" | "verified";
   completeness: number;
+  data?: Record<string, string>;
 };
 
+const deityMap: Record<string, string> = {
+  Shiva: "LORD SHIVA", Vishnu: "LORD VISHNU", Devi: "LORD BHAGAVATHY",
+  Ayyappa: "LORD AYYAPPA", Ganapathi: "LORD GANESH",
+};
+
+/** Map the 4 quick-form answers onto the detailed listing-flow step keys. */
+export function toPrefill(kind: SubmitKind, v: Record<string, string>): Record<string, string> {
+  const p: Record<string, string> = {};
+  if (v.name) p.name = v.name;
+  if (v.phone) p.phone = v.phone;
+  if (kind === "temple") {
+    if (v.place) { p.landmark = v.place; p.city = v.place.split(",").pop()!.trim(); }
+    if (v.deity && deityMap[v.deity]) p.mainDeity = deityMap[v.deity];
+  }
+  if (kind === "service" && v.place) p.city = v.place;
+  if (kind === "festival") {
+    if (v.temple) p.temple = v.temple;
+    if (v.date) p.start = v.date;
+  }
+  return p;
+}
+
 const seed: Submission[] = [
-  { id: "s1", kind: "temple", name: "Sree Karthyayani Temple", place: "Cherthala", status: "verified", completeness: 100 },
-  { id: "s2", kind: "service", name: "Anand Poojari", place: "Vaikom", status: "pending", completeness: 45 },
+  { id: "s1", kind: "temple", name: "Sree Karthyayani Temple", place: "Cherthala", status: "verified", completeness: 100, data: { name: "Sree Karthyayani Temple", place: "Cherthala", deity: "Devi" } },
+  { id: "s2", kind: "service", name: "Anand Poojari", place: "Vaikom", status: "pending", completeness: 45, data: { name: "Anand Poojari", place: "Vaikom", phone: "9847012345" } },
 ];
 
 /* ---------------- MAIN SUBMIT TAB ---------------- */
