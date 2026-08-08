@@ -160,7 +160,22 @@ function Onboarding({ onDone }: { onDone: (p: { name: string; phone: string }) =
             <label className="block text-sm font-semibold text-ink mb-2">Enter OTP sent to +91 {phone || "94966 86256"}</label>
             <div className="flex gap-3 justify-center mt-2">
               {otp.map((v, i) => (
-                <input key={i} value={v} maxLength={1} inputMode="numeric" onChange={(e) => setOtp((o) => o.map((x, j) => (j === i ? e.target.value : x)))} className="size-14 text-center rounded-2xl bg-card ring-1 ring-border font-bold text-2xl text-ink outline-none focus:ring-2 focus:ring-earth" />
+                <input
+                  key={i}
+                  autoFocus={i === 0}
+                  value={v}
+                  maxLength={1}
+                  inputMode="numeric"
+                  onChange={(e) => {
+                    const d = e.target.value.replace(/\D/g, "").slice(-1);
+                    setOtp((o) => o.map((x, j) => (j === i ? d : x)));
+                    if (d) {
+                      const next = e.target.parentElement?.children[i + 1] as HTMLInputElement | undefined;
+                      next?.focus();
+                    }
+                  }}
+                  className="size-14 text-center rounded-2xl bg-card ring-1 ring-border font-bold text-2xl text-ink outline-none focus:ring-2 focus:ring-earth"
+                />
               ))}
             </div>
             <p className="text-xs text-ink-soft mt-3 text-center">Didn't get code? <span className="text-earth font-semibold">Resend in 0:24</span></p>
