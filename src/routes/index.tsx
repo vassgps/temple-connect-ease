@@ -230,10 +230,11 @@ function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
 }
 
 function TabView({ tab, setView, setTab, profile }: { tab: Tab; setView: (v: View) => void; setTab: (t: Tab) => void; profile: { name: string; phone: string } }) {
-  if (tab === "chats") return <ChatsList open={(id) => setView({ name: "chat", id })} openAI={() => setView({ name: "ai-chat" })} openHub={() => setView({ name: "listing-hub" })} />;
+  if (tab === "chats") return <ChatsList open={(id) => setView({ name: "chat", id })} openAI={() => setView({ name: "ai-chat" })} />;
   if (tab === "explore") return <ExploreTemples open={(id) => setView({ name: "temple", id })} openEvents={() => setView({ name: "events" })} />;
   if (tab === "bookings") return <BookingsList open={(id) => setView({ name: "temple", id })} goExplore={() => setTab("explore")} />;
-  if (tab === "status") return <StatusScreen />;
+  if (tab === "submit") return <SubmitScreen logoMark={logoMark} openFullFlow={(k: SubmitKind) => setView({ name: "meenakshi", kind: k === "festival" ? "event" : k })} />;
+
   return <ProfileScreen profile={profile} openRefer={() => setView({ name: "refer" })} openAgent={() => setView({ name: "agent" })} openHub={() => setView({ name: "listing-hub" })} />;
 }
 
