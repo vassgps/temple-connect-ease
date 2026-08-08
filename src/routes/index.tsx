@@ -27,7 +27,7 @@ export const Route = createFileRoute("/")({
   component: App,
 });
 
-type Tab = "chats" | "explore" | "bookings" | "status" | "profile";
+type Tab = "chats" | "explore" | "bookings" | "submit" | "profile";
 type View =
   | { name: "tab" }
   | { name: "chat"; id: string }
