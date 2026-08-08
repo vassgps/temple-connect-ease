@@ -329,14 +329,15 @@ function Avatar({ name, img, initials, size = 48 }: { name: string; img?: string
   return <div style={style} className="rounded-full bg-gradient-to-br from-earth-soft to-earth/30 grid place-items-center font-bold text-earth shrink-0">{label}</div>;
 }
 
-/* ---------------- AI CHAT (Ask TempleAddress) ---------------- */
+/* ---------------- AI CHAT (Meenakshi — RAG assistant) ---------------- */
 type AIMsg = { id: number; from: "me" | "ai"; text?: string; kind?: "text" | "image" | "file" | "voice"; meta?: string };
 
 function AIChat({ back }: { back: () => void }) {
   const [msgs, setMsgs] = useState<AIMsg[]>([
-    { id: 1, from: "ai", text: "🙏 Namaskaram! I'm TempleAddress AI. Ask me about any temple, pooja, or festival — in English or Malayalam." },
-    { id: 2, from: "ai", text: "Try: \"Find Shiva temples near Vaikom\", \"When is next Ekadashi?\", or upload a temple photo to identify it." },
+    { id: 1, from: "ai", text: "🙏 Namaskaram! I'm Meenakshi, your TempleAddress assistant. Ask me about any temple, pooja, festival — or your own bookings. English or Malayalam." },
+    { id: 2, from: "ai", text: "Try: \"Shiva temples near Vaikom\", \"When is the next Ekadashi?\", or \"Show my last booking receipt\"." },
   ]);
+
   const [input, setInput] = useState("");
   const [showAttach, setShowAttach] = useState(false);
 
