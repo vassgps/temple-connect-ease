@@ -48,11 +48,34 @@ export type Submission = {
   place: string;
   status: "pending" | "verified";
   completeness: number;
+  data?: Record<string, string>;
 };
 
+const deityMap: Record<string, string> = {
+  Shiva: "LORD SHIVA", Vishnu: "LORD VISHNU", Devi: "LORD BHAGAVATHY",
+  Ayyappa: "LORD AYYAPPA", Ganapathi: "LORD GANESH",
+};
+
+/** Map the 4 quick-form answers onto the detailed listing-flow step keys. */
+export function toPrefill(kind: SubmitKind, v: Record<string, string>): Record<string, string> {
+  const p: Record<string, string> = {};
+  if (v.name) p.name = v.name;
+  if (v.phone) p.phone = v.phone;
+  if (kind === "temple") {
+    if (v.place) { p.landmark = v.place; p.city = v.place.split(",").pop()!.trim(); }
+    if (v.deity && deityMap[v.deity]) p.mainDeity = deityMap[v.deity];
+  }
+  if (kind === "service" && v.place) p.city = v.place;
+  if (kind === "festival") {
+    if (v.temple) p.temple = v.temple;
+    if (v.date) p.start = v.date;
+  }
+  return p;
+}
+
 const seed: Submission[] = [
-  { id: "s1", kind: "temple", name: "Sree Karthyayani Temple", place: "Cherthala", status: "verified", completeness: 100 },
-  { id: "s2", kind: "service", name: "Anand Poojari", place: "Vaikom", status: "pending", completeness: 45 },
+  { id: "s1", kind: "temple", name: "Sree Karthyayani Temple", place: "Cherthala", status: "verified", completeness: 100, data: { name: "Sree Karthyayani Temple", place: "Cherthala", deity: "Devi" } },
+  { id: "s2", kind: "service", name: "Anand Poojari", place: "Vaikom", status: "pending", completeness: 45, data: { name: "Anand Poojari", place: "Vaikom", phone: "9847012345" } },
 ];
 
 /* ---------------- MAIN SUBMIT TAB ---------------- */
@@ -60,14 +83,16 @@ export function SubmitScreen({
   logoMark, openFullFlow,
 }: {
   logoMark: string;
-  openFullFlow: (kind: SubmitKind) => void;
+  openFullFlow: (kind: SubmitKind, prefill?: Record<string, string>) => void;
 }) {
   const [form, setForm] = useState<SubmitKind | null>(null);
   const [items, setItems] = useState<Submission[]>(seed);
   const [saved, setSaved] = useState<Submission | null>(null);
 
+  const openMore = (it: Submission) => openFullFlow(it.kind, toPrefill(it.kind, it.data ?? { name: it.name, place: it.place }));
+
   if (saved) {
-    return <SavedCard item={saved} onDone={() => setSaved(null)} onMore={() => { const k = saved.kind; setSaved(null); openFullFlow(k); }} />;
+    return <SavedCard item={saved} onDone={() => setSaved(null)} onMore={() => { const s = saved; setSaved(null); openMore(s); }} />;
   }
 
   if (form) {
@@ -75,8 +100,12 @@ export function SubmitScreen({
       <QuickForm
         kind={form}
         back={() => setForm(null)}
-        onSave={(name, place) => {
-          const item: Submission = { id: `u${Date.now()}`, kind: form, name, place, status: "pending", completeness: 40 };
+        onSave={(values) => {
+          const item: Submission = {
+            id: `u${Date.now()}`, kind: form,
+            name: values.name ?? "Untitled", place: values.place ?? "Kerala",
+            status: "pending", completeness: 40, data: values,
+          };
           setItems((p) => [item, ...p]);
           setForm(null);
           setSaved(item);
@@ -143,7 +172,7 @@ export function SubmitScreen({
                     <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
                       <div className="h-full bg-earth rounded-full" style={{ width: `${it.completeness}%` }} />
                     </div>
-                    <button onClick={() => openFullFlow(it.kind)} className="mt-3 w-full h-11 rounded-xl bg-earth-soft text-earth font-bold text-sm flex items-center justify-center gap-2">
+                    <button onClick={() => openMore(it)} className="mt-3 w-full h-11 rounded-xl bg-earth-soft text-earth font-bold text-sm flex items-center justify-center gap-2">
                       <Sparkles className="size-4" /> Add more details ({it.completeness}% complete)
                     </button>
                   </>
@@ -158,7 +187,7 @@ export function SubmitScreen({
 }
 
 /* ---------------- QUICK FORM (4 fields) ---------------- */
-function QuickForm({ kind, back, onSave }: { kind: SubmitKind; back: () => void; onSave: (name: string, place: string) => void }) {
+function QuickForm({ kind, back, onSave }: { kind: SubmitKind; back: () => void; onSave: (values: Record<string, string>) => void }) {
   const meta = kindMeta[kind];
   const [values, setValues] = useState<Record<string, string>>({});
   const [photo, setPhoto] = useState(false);
@@ -221,7 +250,7 @@ function QuickForm({ kind, back, onSave }: { kind: SubmitKind; back: () => void;
       <div className="p-4 bg-card border-t border-border shrink-0">
         <button
           disabled={!ready}
-          onClick={() => onSave(values.name ?? "Untitled", values.place ?? "Kerala")}
+          onClick={() => onSave(values)}
           className="w-full h-16 rounded-2xl bg-earth text-primary-foreground font-bold text-lg shadow-soft disabled:opacity-40"
         >
           Save
