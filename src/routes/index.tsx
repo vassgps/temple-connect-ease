@@ -15,6 +15,9 @@ import temple3 from "@/assets/temple-3.jpg";
 import temple4 from "@/assets/temple-4.jpg";
 import logoMarkAsset from "@/assets/logo-mark.png.asset.json";
 import logoFullAsset from "@/assets/logo-full.png.asset.json";
+import { ListingHub, MyListings, MeenakshiFlow, type FlowKind } from "@/components/listing-flow";
+import meenakshiImg from "@/assets/meenakshi.jpg";
+
 
 const logoMark = logoMarkAsset.url;
 const logoFull = logoFullAsset.url;
@@ -35,7 +38,11 @@ type View =
   | { name: "book-receipt"; id: number }
   | { name: "refer" }
   | { name: "agent" }
+  | { name: "listing-hub" }
+  | { name: "my-listings" }
+  | { name: "meenakshi"; kind: FlowKind }
   | { name: "events" };
+
 
 type Profile = { name: string; phone: string } | null;
 
@@ -103,8 +110,12 @@ function App() {
               {view.name === "book-payment" && <BookPayment id={view.id} back={() => setView({ name: "book-details", id: view.id })} next={() => setView({ name: "book-receipt", id: view.id })} />}
               {view.name === "book-receipt" && <BookReceipt id={view.id} home={() => { setView({ name: "tab" }); setTab("bookings"); }} />}
               {view.name === "refer" && <ReferEarn back={() => setView({ name: "tab" })} />}
-              {view.name === "agent" && <AgentDashboard back={() => setView({ name: "tab" })} />}
+              {view.name === "agent" && <AgentDashboard back={() => setView({ name: "tab" })} openHub={() => setView({ name: "listing-hub" })} openListings={() => setView({ name: "my-listings" })} />}
+              {view.name === "listing-hub" && <ListingHub phone={profile.phone} back={() => setView({ name: "tab" })} start={(k) => setView({ name: "meenakshi", kind: k })} openListings={() => setView({ name: "my-listings" })} />}
+              {view.name === "my-listings" && <MyListings back={() => setView({ name: "listing-hub" })} />}
+              {view.name === "meenakshi" && <MeenakshiFlow kind={view.kind} phone={profile.phone} back={() => setView({ name: "listing-hub" })} onSubmitted={() => setView({ name: "my-listings" })} />}
               {view.name === "events" && <EventsFeed back={() => setView({ name: "tab" })} open={(id) => setView({ name: "temple", id })} />}
+
             </div>
             {view.name === "tab" && <BottomNav tab={tab} setTab={setTab} />}
           </>
@@ -203,11 +214,11 @@ function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
 }
 
 function TabView({ tab, setView, setTab, profile }: { tab: Tab; setView: (v: View) => void; setTab: (t: Tab) => void; profile: { name: string; phone: string } }) {
-  if (tab === "chats") return <ChatsList open={(id) => setView({ name: "chat", id })} openAI={() => setView({ name: "ai-chat" })} />;
+  if (tab === "chats") return <ChatsList open={(id) => setView({ name: "chat", id })} openAI={() => setView({ name: "ai-chat" })} openHub={() => setView({ name: "listing-hub" })} />;
   if (tab === "explore") return <ExploreTemples open={(id) => setView({ name: "temple", id })} openEvents={() => setView({ name: "events" })} />;
   if (tab === "bookings") return <BookingsList open={(id) => setView({ name: "temple", id })} goExplore={() => setTab("explore")} />;
   if (tab === "status") return <StatusScreen />;
-  return <ProfileScreen profile={profile} openRefer={() => setView({ name: "refer" })} openAgent={() => setView({ name: "agent" })} />;
+  return <ProfileScreen profile={profile} openRefer={() => setView({ name: "refer" })} openAgent={() => setView({ name: "agent" })} openHub={() => setView({ name: "listing-hub" })} />;
 }
 
 /* ---------------- BRAND HEADER ---------------- */
@@ -225,7 +236,7 @@ function BrandRow({ right }: { right?: React.ReactNode }) {
 }
 
 /* ---------------- CHATS LIST ---------------- */
-function ChatsList({ open, openAI }: { open: (id: string) => void; openAI: () => void }) {
+function ChatsList({ open, openAI, openHub }: { open: (id: string) => void; openAI: () => void; openHub: () => void }) {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <header className="px-5 pt-3 pb-4 bg-card">
@@ -261,6 +272,26 @@ function ChatsList({ open, openAI }: { open: (id: string) => void; openAI: () =>
             <p className="text-sm text-ink-soft truncate mt-0.5">Ask about temples, poojas, timings, festivals…</p>
           </div>
         </button>
+
+        {/* PINNED: Meenakshi listing assistant */}
+        <button onClick={openHub} className="w-full px-5 py-4 flex gap-4 items-center bg-verified/8 border-b border-border/50 active:opacity-80">
+          <div className="relative shrink-0">
+            <img src={meenakshiImg} alt="Meenakshi" width={816} height={816} loading="lazy" className="size-14 rounded-full object-cover object-top ring-2 ring-cream" />
+            <span className="absolute bottom-0 right-0 size-4 rounded-full bg-verified ring-2 ring-card" />
+          </div>
+          <div className="flex-1 min-w-0 text-left">
+            <div className="flex justify-between items-baseline gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="font-bold text-ink truncate">Meenakshi</span>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-verified text-primary-foreground uppercase">Guide</span>
+              </div>
+              <span className="text-xs text-ink-soft shrink-0">online</span>
+            </div>
+            <p className="text-sm text-ink-soft truncate mt-0.5">Add your temple, service, event or business — step by step.</p>
+          </div>
+        </button>
+
+
 
         {chats.map((c, i) => (
           <button key={c.id} onClick={() => open(c.id)} className={`w-full px-5 py-4 flex gap-4 items-center active:bg-muted ${i !== chats.length - 1 ? "border-b border-border/50" : ""}`}>
@@ -1308,7 +1339,7 @@ function StoryViewer({ id, onClose }: { id: string; onClose: () => void }) {
 }
 
 /* ---------------- PROFILE ---------------- */
-function ProfileScreen({ profile, openRefer, openAgent }: { profile: { name: string; phone: string }; openRefer: () => void; openAgent: () => void }) {
+function ProfileScreen({ profile, openRefer, openAgent, openHub }: { profile: { name: string; phone: string }; openRefer: () => void; openAgent: () => void; openHub: () => void }) {
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
       <div className="bg-gradient-to-br from-earth to-earth/70 px-5 pt-6 pb-8 text-primary-foreground">
@@ -1333,6 +1364,16 @@ function ProfileScreen({ profile, openRefer, openAgent }: { profile: { name: str
           <div className="flex-1">
             <div className="font-serif font-bold text-ink">Refer & Earn ₹100</div>
             <div className="text-xs text-ink-soft">Invite friends, earn on every pooja they book</div>
+          </div>
+          <ChevronRight className="size-5 text-earth" />
+        </button>
+
+        {/* Add a listing with Meenakshi */}
+        <button onClick={openHub} className="w-full p-4 rounded-2xl bg-card ring-1 ring-border flex items-center gap-3 text-left">
+          <img src={meenakshiImg} alt="Meenakshi" width={816} height={816} loading="lazy" className="size-12 rounded-xl object-cover object-top" />
+          <div className="flex-1">
+            <div className="font-semibold text-ink">Add a Listing with Meenakshi</div>
+            <div className="text-xs text-ink-soft">Temple, service, event or local business</div>
           </div>
           <ChevronRight className="size-5 text-earth" />
         </button>
@@ -1418,7 +1459,7 @@ function ReferEarn({ back }: { back: () => void }) {
 }
 
 /* ---------------- AGENT DASHBOARD ---------------- */
-function AgentDashboard({ back }: { back: () => void }) {
+function AgentDashboard({ back, openHub, openListings }: { back: () => void; openHub: () => void; openListings: () => void }) {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <header className="px-5 pt-3 pb-4 bg-card flex items-center gap-3"><button onClick={back} className="size-10 rounded-full bg-muted grid place-items-center"><ArrowLeft className="size-5 text-ink" /></button><div><div className="text-lg font-bold text-ink">Agent Hub</div><div className="text-xs text-ink-soft">Anand Nambissan · Active</div></div></header>
@@ -1437,18 +1478,19 @@ function AgentDashboard({ back }: { back: () => void }) {
           <div className="text-xs font-bold uppercase tracking-wider text-ink-soft mb-3">Quick Actions</div>
           <div className="grid grid-cols-3 gap-3">
             {[
-              { i: Flame, l: "Temples", n: 11 },
-              { i: CalendarDays, l: "Festivals", n: 4 },
-              { i: Users, l: "Services", n: 6 },
-              { i: Sparkles, l: "Holy Places", n: 2 },
-              { i: Plus, l: "Add Listing" },
-              { i: Megaphone, l: "Ads & Sponsors" },
+              { i: Flame, l: "Temples", n: 11, a: openListings },
+              { i: CalendarDays, l: "Festivals", n: 4, a: openListings },
+              { i: Users, l: "Services", n: 6, a: openListings },
+              { i: Sparkles, l: "Holy Places", n: 2, a: openListings },
+              { i: Plus, l: "Add Listing", a: openHub },
+              { i: Megaphone, l: "Ads & Sponsors", a: openHub },
             ].map((x) => (
-              <button key={x.l} className="p-3 rounded-2xl bg-card ring-1 ring-border flex flex-col items-start gap-2">
+              <button key={x.l} onClick={x.a} className="p-3 rounded-2xl bg-card ring-1 ring-border flex flex-col items-start gap-2 text-left">
                 <div className="size-9 rounded-xl bg-earth-soft grid place-items-center"><x.i className="size-4 text-earth" /></div>
                 <div><div className="text-xs font-semibold text-ink">{x.l}</div>{x.n !== undefined && <div className="text-[10px] text-ink-soft">{x.n} active</div>}</div>
               </button>
             ))}
+
           </div>
         </div>
 
