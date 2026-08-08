@@ -268,7 +268,7 @@ export function MeenakshiFlow({ kind, phone, back, onSubmitted, prefill }: { kin
       return;
     }
     push({ from: "me", ...(bubble ?? { text: value || "—" }) });
-    const next = idx + 1;
+    const next = nextOpen(idx + 1);
     setIdx(next);
     setTimeout(() => ask(next), 300);
   };
