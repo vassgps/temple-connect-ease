@@ -253,7 +253,7 @@ function BrandRow({ right }: { right?: React.ReactNode }) {
 }
 
 /* ---------------- CHATS LIST ---------------- */
-function ChatsList({ open, openAI, openHub }: { open: (id: string) => void; openAI: () => void; openHub: () => void }) {
+function ChatsList({ open, openAI }: { open: (id: string) => void; openAI: () => void }) {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <header className="px-5 pt-3 pb-4 bg-card">
@@ -270,10 +270,10 @@ function ChatsList({ open, openAI, openHub }: { open: (id: string) => void; open
       </header>
 
       <div className="flex-1 overflow-y-auto bg-card">
-        {/* PINNED: Ask TempleAddress AI */}
+        {/* PINNED: Meenakshi — AI assistant */}
         <button onClick={openAI} className="w-full px-5 py-4 flex gap-4 items-center bg-gradient-to-r from-earth-soft/70 to-gold/20 border-b border-border/50 active:opacity-80">
-          <div className="relative size-14 rounded-full bg-gradient-to-br from-earth to-gold grid place-items-center shadow-soft ring-2 ring-cream">
-            <img src={logoMark} alt="" className="size-9" />
+          <div className="relative shrink-0">
+            <img src={meenakshiImg} alt="Meenakshi" width={816} height={816} loading="lazy" className="size-14 rounded-full object-cover object-top ring-2 ring-cream" />
             <span className="absolute -bottom-0.5 -right-0.5 size-5 rounded-full bg-verified ring-2 ring-cream grid place-items-center">
               <Bot className="size-3 text-white" />
             </span>
@@ -281,32 +281,15 @@ function ChatsList({ open, openAI, openHub }: { open: (id: string) => void; open
           <div className="flex-1 min-w-0 text-left">
             <div className="flex justify-between items-baseline gap-2">
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className="font-bold text-ink truncate">Ask TempleAddress</span>
+                <span className="font-bold text-ink truncate">Meenakshi</span>
                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-earth text-primary-foreground uppercase">AI</span>
               </div>
               <span className="text-xs text-ink-soft shrink-0">Always on</span>
             </div>
-            <p className="text-sm text-ink-soft truncate mt-0.5">Ask about temples, poojas, timings, festivals…</p>
+            <p className="text-sm text-ink-soft truncate mt-0.5">Ask about temples, poojas, festivals or your bookings…</p>
           </div>
         </button>
 
-        {/* PINNED: Meenakshi listing assistant */}
-        <button onClick={openHub} className="w-full px-5 py-4 flex gap-4 items-center bg-verified/8 border-b border-border/50 active:opacity-80">
-          <div className="relative shrink-0">
-            <img src={meenakshiImg} alt="Meenakshi" width={816} height={816} loading="lazy" className="size-14 rounded-full object-cover object-top ring-2 ring-cream" />
-            <span className="absolute bottom-0 right-0 size-4 rounded-full bg-verified ring-2 ring-card" />
-          </div>
-          <div className="flex-1 min-w-0 text-left">
-            <div className="flex justify-between items-baseline gap-2">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="font-bold text-ink truncate">Meenakshi</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-verified text-primary-foreground uppercase">Guide</span>
-              </div>
-              <span className="text-xs text-ink-soft shrink-0">online</span>
-            </div>
-            <p className="text-sm text-ink-soft truncate mt-0.5">Add your temple, service, event or business — step by step.</p>
-          </div>
-        </button>
 
 
 
