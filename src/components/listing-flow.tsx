@@ -290,7 +290,7 @@ export function MeenakshiFlow({ kind, phone, back, onSubmitted, prefill }: { kin
     const sections = [...new Set(steps.map((s) => s.section))];
     return (
       <div className="flex-1 min-h-0 flex flex-col bg-cream">
-        <FlowHeader title="Listing Helper" sub="Review" phone={phone} lang={lang} setLang={setLang} back={() => setReview(false)} progress={1} idx={total} total={total} />
+        <FlowHeader title={listingName || "Listing Helper"} sub="Review" phone={phone} lang={lang} setLang={setLang} back={() => setReview(false)} progress={1} idx={total} total={total} />
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <div className="p-3 rounded-2xl bg-card ring-1 ring-border text-sm text-ink-soft">
             📋 Please review the details before submission.<br />
@@ -323,7 +323,7 @@ export function MeenakshiFlow({ kind, phone, back, onSubmitted, prefill }: { kin
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-chat-bg">
       <FlowHeader
-        title="Listing Helper"
+        title={listingName || "Listing Helper"}
         sub={active ? active.section : meta.title}
         phone={phone} lang={lang} setLang={setLang}
         back={editStep ? () => { setEditKey(null); setReview(true); } : back}
