@@ -1,13 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  MessageCircle, Compass, CalendarCheck, Circle, User,
+  MessageCircle, Compass, CalendarCheck, FilePlus2, User,
   Search, Phone, Video, MoreVertical, ArrowLeft, Plus, Mic, Smile,
   MapPin, Star, ShieldCheck, ChevronRight, Check, CheckCheck,
   Flame, Sparkles, Heart, CalendarDays, CreditCard, Share2, Download,
   Image as ImageIcon, FileText, Camera, Bot, Gift, Wallet, BarChart3,
   Bell, Users, Send, X, Megaphone, Edit3,
-  Bookmark, Play, Film, Type as TypeIcon, MoreHorizontal, Volume2,
 } from "lucide-react";
 import temple1 from "@/assets/temple-1.jpg";
 import temple2 from "@/assets/temple-2.jpg";
@@ -16,7 +15,9 @@ import temple4 from "@/assets/temple-4.jpg";
 import logoMarkAsset from "@/assets/logo-mark.png.asset.json";
 import logoFullAsset from "@/assets/logo-full.png.asset.json";
 import { ListingHub, MyListings, MeenakshiFlow, type FlowKind } from "@/components/listing-flow";
+import { SubmitScreen, type SubmitKind } from "@/components/quick-submit";
 import meenakshiImg from "@/assets/meenakshi.jpg";
+
 
 
 const logoMark = logoMarkAsset.url;
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/")({
   component: App,
 });
 
-type Tab = "chats" | "explore" | "bookings" | "status" | "profile";
+type Tab = "chats" | "explore" | "bookings" | "submit" | "profile";
 type View =
   | { name: "tab" }
   | { name: "chat"; id: string }
@@ -80,11 +81,8 @@ const chats = [
   { id: "c5", name: "Ravi (Electrician)", last: "Light repair done ✓", time: "Mon", unread: 0, group: false, avatar: null, initials: "RV", service: true },
 ];
 
-const statuses = [
-  { id: "s1", name: "Vaikom Temple", ml: "വൈക്കം", time: "1h ago", avatar: temple1 },
-  { id: "s2", name: "Guruvayur Devotees", time: "3h ago", avatar: temple3 },
-  { id: "s3", name: "Ramesh Pandit Ji", time: "5h ago", avatar: null, initials: "RP" },
-];
+
+
 
 function App() {
   const [tab, setTab] = useState<Tab>("chats");
@@ -204,7 +202,7 @@ function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
     { id: "chats", label: "Chats", icon: MessageCircle, badge: 8 },
     { id: "explore", label: "Explore", icon: Compass },
     { id: "bookings", label: "Bookings", icon: CalendarCheck },
-    { id: "status", label: "Status", icon: Circle },
+    { id: "submit", label: "Submit", icon: FilePlus2 },
     { id: "profile", label: "Profile", icon: User },
   ];
   return (
@@ -229,10 +227,11 @@ function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
 }
 
 function TabView({ tab, setView, setTab, profile }: { tab: Tab; setView: (v: View) => void; setTab: (t: Tab) => void; profile: { name: string; phone: string } }) {
-  if (tab === "chats") return <ChatsList open={(id) => setView({ name: "chat", id })} openAI={() => setView({ name: "ai-chat" })} openHub={() => setView({ name: "listing-hub" })} />;
+  if (tab === "chats") return <ChatsList open={(id) => setView({ name: "chat", id })} openAI={() => setView({ name: "ai-chat" })} />;
   if (tab === "explore") return <ExploreTemples open={(id) => setView({ name: "temple", id })} openEvents={() => setView({ name: "events" })} />;
   if (tab === "bookings") return <BookingsList open={(id) => setView({ name: "temple", id })} goExplore={() => setTab("explore")} />;
-  if (tab === "status") return <StatusScreen />;
+  if (tab === "submit") return <SubmitScreen logoMark={logoMark} openFullFlow={(k: SubmitKind) => setView({ name: "meenakshi", kind: k === "festival" ? "event" : k })} />;
+
   return <ProfileScreen profile={profile} openRefer={() => setView({ name: "refer" })} openAgent={() => setView({ name: "agent" })} openHub={() => setView({ name: "listing-hub" })} />;
 }
 
@@ -251,7 +250,7 @@ function BrandRow({ right }: { right?: React.ReactNode }) {
 }
 
 /* ---------------- CHATS LIST ---------------- */
-function ChatsList({ open, openAI, openHub }: { open: (id: string) => void; openAI: () => void; openHub: () => void }) {
+function ChatsList({ open, openAI }: { open: (id: string) => void; openAI: () => void }) {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <header className="px-5 pt-3 pb-4 bg-card">
@@ -268,10 +267,10 @@ function ChatsList({ open, openAI, openHub }: { open: (id: string) => void; open
       </header>
 
       <div className="flex-1 overflow-y-auto bg-card">
-        {/* PINNED: Ask TempleAddress AI */}
+        {/* PINNED: Meenakshi — AI assistant */}
         <button onClick={openAI} className="w-full px-5 py-4 flex gap-4 items-center bg-gradient-to-r from-earth-soft/70 to-gold/20 border-b border-border/50 active:opacity-80">
-          <div className="relative size-14 rounded-full bg-gradient-to-br from-earth to-gold grid place-items-center shadow-soft ring-2 ring-cream">
-            <img src={logoMark} alt="" className="size-9" />
+          <div className="relative shrink-0">
+            <img src={meenakshiImg} alt="Meenakshi" width={816} height={816} loading="lazy" className="size-14 rounded-full object-cover object-top ring-2 ring-cream" />
             <span className="absolute -bottom-0.5 -right-0.5 size-5 rounded-full bg-verified ring-2 ring-cream grid place-items-center">
               <Bot className="size-3 text-white" />
             </span>
@@ -279,32 +278,15 @@ function ChatsList({ open, openAI, openHub }: { open: (id: string) => void; open
           <div className="flex-1 min-w-0 text-left">
             <div className="flex justify-between items-baseline gap-2">
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className="font-bold text-ink truncate">Ask TempleAddress</span>
+                <span className="font-bold text-ink truncate">Meenakshi</span>
                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-earth text-primary-foreground uppercase">AI</span>
               </div>
               <span className="text-xs text-ink-soft shrink-0">Always on</span>
             </div>
-            <p className="text-sm text-ink-soft truncate mt-0.5">Ask about temples, poojas, timings, festivals…</p>
+            <p className="text-sm text-ink-soft truncate mt-0.5">Ask about temples, poojas, festivals or your bookings…</p>
           </div>
         </button>
 
-        {/* PINNED: Meenakshi listing assistant */}
-        <button onClick={openHub} className="w-full px-5 py-4 flex gap-4 items-center bg-verified/8 border-b border-border/50 active:opacity-80">
-          <div className="relative shrink-0">
-            <img src={meenakshiImg} alt="Meenakshi" width={816} height={816} loading="lazy" className="size-14 rounded-full object-cover object-top ring-2 ring-cream" />
-            <span className="absolute bottom-0 right-0 size-4 rounded-full bg-verified ring-2 ring-card" />
-          </div>
-          <div className="flex-1 min-w-0 text-left">
-            <div className="flex justify-between items-baseline gap-2">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="font-bold text-ink truncate">Meenakshi</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-verified text-primary-foreground uppercase">Guide</span>
-              </div>
-              <span className="text-xs text-ink-soft shrink-0">online</span>
-            </div>
-            <p className="text-sm text-ink-soft truncate mt-0.5">Add your temple, service, event or business — step by step.</p>
-          </div>
-        </button>
 
 
 
@@ -347,18 +329,19 @@ function Avatar({ name, img, initials, size = 48 }: { name: string; img?: string
   return <div style={style} className="rounded-full bg-gradient-to-br from-earth-soft to-earth/30 grid place-items-center font-bold text-earth shrink-0">{label}</div>;
 }
 
-/* ---------------- AI CHAT (Ask TempleAddress) ---------------- */
+/* ---------------- AI CHAT (Meenakshi — RAG assistant) ---------------- */
 type AIMsg = { id: number; from: "me" | "ai"; text?: string; kind?: "text" | "image" | "file" | "voice"; meta?: string };
 
 function AIChat({ back }: { back: () => void }) {
   const [msgs, setMsgs] = useState<AIMsg[]>([
-    { id: 1, from: "ai", text: "🙏 Namaskaram! I'm TempleAddress AI. Ask me about any temple, pooja, or festival — in English or Malayalam." },
-    { id: 2, from: "ai", text: "Try: \"Find Shiva temples near Vaikom\", \"When is next Ekadashi?\", or upload a temple photo to identify it." },
+    { id: 1, from: "ai", text: "🙏 Namaskaram! I'm Meenakshi, your TempleAddress assistant. Ask me about any temple, pooja, festival — or your own bookings. English or Malayalam." },
+    { id: 2, from: "ai", text: "Try: \"Shiva temples near Vaikom\", \"When is the next Ekadashi?\", or \"Show my last booking receipt\"." },
   ]);
+
   const [input, setInput] = useState("");
   const [showAttach, setShowAttach] = useState(false);
 
-  const suggestions = ["Nearby temples", "Next festival", "Book Pushpanjali", "Malayalam pooja list"];
+  const suggestions = ["Nearby temples", "Next festival", "My bookings", "Pooja timings"];
 
   const send = (text?: string, kind: "text" | "image" | "file" | "voice" = "text", meta?: string) => {
     const t = text ?? input.trim();
@@ -383,15 +366,14 @@ function AIChat({ back }: { back: () => void }) {
     <div className="flex-1 flex flex-col min-h-0 bg-chat-bg">
       <header className="px-3 py-3 bg-card border-b border-border flex items-center gap-3 shrink-0">
         <button onClick={back} className="size-10 grid place-items-center"><ArrowLeft className="size-5 text-ink" /></button>
-        <div className="size-10 rounded-full bg-gradient-to-br from-earth to-gold grid place-items-center ring-2 ring-cream">
-          <img src={logoMark} alt="" className="size-7" />
-        </div>
+        <img src={meenakshiImg} alt="Meenakshi" width={816} height={816} loading="lazy" className="size-10 rounded-full object-cover object-top ring-2 ring-cream" />
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-ink flex items-center gap-1.5">
-            Ask TempleAddress <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-earth text-primary-foreground">AI</span>
+            Meenakshi <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-earth text-primary-foreground">AI</span>
           </div>
-          <div className="text-xs text-verified flex items-center gap-1"><Bot className="size-3" /> Powered by TempleAddress AI</div>
+          <div className="text-xs text-verified flex items-center gap-1"><Bot className="size-3" /> TempleAddress AI · temples, festivals & bookings</div>
         </div>
+
         <button className="size-10 grid place-items-center"><MoreVertical className="size-5 text-ink-soft" /></button>
       </header>
 
@@ -1000,358 +982,8 @@ function BookingsList({ open, goExplore }: { open: (id: number) => void; goExplo
   );
 }
 
-/* ---------------- STATUS / FEED (Instagram-style) ---------------- */
-type FeedPost = {
-  id: string;
-  author: string;
-  ml?: string;
-  avatar: string | null;
-  initials?: string;
-  temple?: string;
-  time: string;
-  kind: "image" | "reel" | "text";
-  media?: string;
-  bg?: string;
-  caption: string;
-  likes: number;
-  comments: { id: string; user: string; text: string }[];
-  verified?: boolean;
-};
+/* Feed / status posts removed in this version — data submission lives in the Submit tab. */
 
-const seedPosts: FeedPost[] = [
-  {
-    id: "p1", author: "Vaikom Mahadeva Temple", ml: "വൈക്കം മഹാദേവ", avatar: temple1, temple: "Vaikom, Kottayam",
-    time: "1h", kind: "image", media: temple1, verified: true,
-    caption: "Ashtami Pradosha darshan today. Sarva mangala mangalye 🙏 #Vaikom #Shiva",
-    likes: 248,
-    comments: [
-      { id: "c1", user: "Ramesh", text: "Namaskaram 🙏" },
-      { id: "c2", user: "Anitha", text: "Beautiful! Booking Pushpanjali for tomorrow." },
-    ],
-  },
-  {
-    id: "p2", author: "Guruvayur Devotees", avatar: temple3, temple: "Thrissur", time: "3h",
-    kind: "reel", media: temple3,
-    caption: "Morning Nirmalya Darshanam · 30-sec reel 🎥",
-    likes: 1204,
-    comments: [{ id: "c1", user: "Priya", text: "Krishna Krishna ✨" }],
-  },
-  {
-    id: "p3", author: "Ramesh Pandit Ji", ml: "രമേശ്", avatar: null, initials: "RP", time: "5h",
-    kind: "text", bg: "from-earth to-gold",
-    caption: "\"Yatha deepo nivatasthaḥ...\" — May your lamp burn steady this Karthika month. 🪔",
-    likes: 87,
-    comments: [],
-  },
-];
-
-function StatusScreen() {
-  const [posts, setPosts] = useState<FeedPost[]>(seedPosts);
-  const [liked, setLiked] = useState<Set<string>>(new Set());
-  const [saved, setSaved] = useState<Set<string>>(new Set());
-  const [openComments, setOpenComments] = useState<string | null>(null);
-  const [composer, setComposer] = useState<null | "image" | "reel" | "text">(null);
-  const [viewStory, setViewStory] = useState<string | null>(null);
-
-  const toggle = (set: Set<string>, id: string, setter: (s: Set<string>) => void) => {
-    const n = new Set(set);
-    if (n.has(id)) n.delete(id); else n.add(id);
-    setter(n);
-  };
-
-  const addPost = (p: Omit<FeedPost, "id" | "likes" | "comments" | "time" | "author" | "avatar">) => {
-    setPosts((prev) => [
-      { id: `u${Date.now()}`, author: "You", avatar: null, initials: "AN", time: "now", likes: 0, comments: [], ...p },
-      ...prev,
-    ]);
-    setComposer(null);
-  };
-
-  const addComment = (postId: string, text: string) => {
-    if (!text.trim()) return;
-    setPosts((prev) => prev.map((p) => p.id === postId
-      ? { ...p, comments: [...p.comments, { id: `c${Date.now()}`, user: "You", text }] }
-      : p));
-  };
-
-  return (
-    <div className="flex-1 flex flex-col min-h-0 relative">
-      <header className="px-5 pt-3 pb-3 bg-card border-b border-border">
-        <BrandRow right={
-          <button className="size-9 rounded-full bg-earth/10 grid place-items-center text-earth"><Heart className="size-4" /></button>
-        } />
-        <div className="flex items-end justify-between mt-2">
-          <div>
-            <h1 className="text-2xl font-bold text-ink">Feed</h1>
-            <p className="font-ml text-xs text-ink-soft">ദേവസ്യ കഥ · Temple moments</p>
-          </div>
-          <button onClick={() => setComposer("image")} className="h-9 px-3 rounded-full bg-earth text-primary-foreground text-xs font-bold flex items-center gap-1"><Plus className="size-4" /> New Post</button>
-        </div>
-      </header>
-
-      <div className="flex-1 overflow-y-auto bg-chat-bg">
-        {/* Stories rail */}
-        <div className="bg-card border-b border-border">
-          <div className="flex gap-4 px-5 py-4 overflow-x-auto no-scrollbar">
-            <button onClick={() => setComposer("image")} className="flex flex-col items-center gap-1.5 shrink-0">
-              <div className="relative size-16 rounded-full bg-muted grid place-items-center ring-2 ring-dashed ring-earth/40">
-                <div className="text-earth"><Plus className="size-6" /></div>
-              </div>
-              <span className="text-[10px] font-semibold text-ink">Your Story</span>
-            </button>
-            {statuses.map((s) => (
-              <button key={s.id} onClick={() => setViewStory(s.id)} className="flex flex-col items-center gap-1.5 shrink-0">
-                <div className="size-16 rounded-full p-[2px] bg-gradient-to-tr from-earth via-gold to-earth">
-                  <div className="size-full rounded-full ring-2 ring-card overflow-hidden">
-                    <Avatar name={s.name} img={s.avatar} initials={s.initials} size={60} />
-                  </div>
-                </div>
-                <span className="text-[10px] font-semibold text-ink truncate max-w-[64px]">{s.name.split(" ")[0]}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Feed */}
-        <div className="pb-24">
-          {posts.map((p) => {
-            const isLiked = liked.has(p.id);
-            const isSaved = saved.has(p.id);
-            return (
-              <article key={p.id} className="bg-card mb-2">
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <div className="size-10 rounded-full ring-2 ring-earth/30 overflow-hidden shrink-0">
-                    <Avatar name={p.author} img={p.avatar} initials={p.initials} size={40} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <span className="font-semibold text-sm text-ink truncate">{p.author}</span>
-                      {p.verified && <ShieldCheck className="size-3.5 text-verified shrink-0" />}
-                    </div>
-                    <div className="text-[11px] text-ink-soft flex items-center gap-1">
-                      {p.temple && <><MapPin className="size-3" /> {p.temple} · </>}{p.time}
-                    </div>
-                  </div>
-                  <button className="size-8 grid place-items-center text-ink-soft"><MoreHorizontal className="size-5" /></button>
-                </div>
-
-                {p.kind === "image" && p.media && (
-                  <div className="w-full aspect-square bg-muted overflow-hidden">
-                    <img src={p.media} alt="" className="w-full h-full object-cover" />
-                  </div>
-                )}
-                {p.kind === "reel" && p.media && (
-                  <div className="relative w-full aspect-[4/5] bg-black overflow-hidden">
-                    <img src={p.media} alt="" className="w-full h-full object-cover opacity-90" />
-                    <div className="absolute inset-0 grid place-items-center">
-                      <div className="size-16 rounded-full bg-black/50 backdrop-blur grid place-items-center ring-2 ring-white/70">
-                        <Play className="size-7 text-white fill-white" />
-                      </div>
-                    </div>
-                    <div className="absolute top-3 left-3 px-2 py-1 rounded-full bg-black/50 text-white text-[10px] font-bold flex items-center gap-1"><Film className="size-3" /> REEL</div>
-                    <button className="absolute top-3 right-3 size-8 rounded-full bg-black/50 grid place-items-center text-white"><Volume2 className="size-4" /></button>
-                  </div>
-                )}
-                {p.kind === "text" && (
-                  <div className={`w-full aspect-square bg-gradient-to-br ${p.bg || "from-earth to-gold"} grid place-items-center p-8`}>
-                    <p className="font-serif text-primary-foreground text-xl leading-snug text-center">{p.caption}</p>
-                  </div>
-                )}
-
-                <div className="px-3 pt-3 pb-1 flex items-center gap-1">
-                  <button onClick={() => toggle(liked, p.id, setLiked)} className="size-10 grid place-items-center">
-                    <Heart className={`size-6 transition ${isLiked ? "fill-destructive text-destructive scale-110" : "text-ink"}`} />
-                  </button>
-                  <button onClick={() => setOpenComments(openComments === p.id ? null : p.id)} className="size-10 grid place-items-center">
-                    <MessageCircle className="size-6 text-ink" />
-                  </button>
-                  <button className="size-10 grid place-items-center"><Send className="size-6 text-ink" /></button>
-                  <div className="flex-1" />
-                  <button onClick={() => toggle(saved, p.id, setSaved)} className="size-10 grid place-items-center">
-                    <Bookmark className={`size-6 ${isSaved ? "fill-ink text-ink" : "text-ink"}`} />
-                  </button>
-                </div>
-
-                <div className="px-4 pb-3">
-                  <div className="text-sm font-bold text-ink">{(p.likes + (isLiked ? 1 : 0)).toLocaleString()} likes</div>
-                  {p.kind !== "text" && (
-                    <p className="text-sm text-ink mt-1">
-                      <span className="font-semibold">{p.author}</span> {p.caption}
-                    </p>
-                  )}
-                  {p.comments.length > 0 && (
-                    <button onClick={() => setOpenComments(p.id)} className="text-xs text-ink-soft mt-1">
-                      View all {p.comments.length} comment{p.comments.length > 1 ? "s" : ""}
-                    </button>
-                  )}
-                  {openComments === p.id && (
-                    <div className="mt-3 space-y-2 border-t border-border pt-3">
-                      {p.comments.map((c) => (
-                        <div key={c.id} className="text-sm text-ink">
-                          <span className="font-semibold">{c.user}</span> <span>{c.text}</span>
-                        </div>
-                      ))}
-                      <CommentInput onSend={(t) => addComment(p.id, t)} />
-                    </div>
-                  )}
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </div>
-
-      <button onClick={() => setComposer("image")} className="absolute right-5 bottom-24 size-14 rounded-2xl bg-earth text-primary-foreground shadow-frame grid place-items-center ring-4 ring-cream">
-        <Plus className="size-7" />
-      </button>
-
-      {composer && <Composer type={composer} setType={setComposer} onPost={addPost} onClose={() => setComposer(null)} />}
-      {viewStory && <StoryViewer id={viewStory} onClose={() => setViewStory(null)} />}
-    </div>
-  );
-}
-
-function CommentInput({ onSend }: { onSend: (t: string) => void }) {
-  const [text, setText] = useState("");
-  return (
-    <div className="flex items-center gap-2 pt-1">
-      <div className="size-7 rounded-full bg-earth text-primary-foreground grid place-items-center text-[10px] font-bold">AN</div>
-      <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Add a comment…" className="flex-1 h-9 px-3 rounded-full bg-muted text-sm text-ink outline-none" />
-      <button onClick={() => { onSend(text); setText(""); }} disabled={!text.trim()} className="text-earth text-sm font-bold disabled:opacity-40">Post</button>
-    </div>
-  );
-}
-
-function Composer({
-  type, setType, onPost, onClose,
-}: {
-  type: "image" | "reel" | "text";
-  setType: (t: "image" | "reel" | "text") => void;
-  onPost: (p: Omit<FeedPost, "id" | "likes" | "comments" | "time" | "author" | "avatar">) => void;
-  onClose: () => void;
-}) {
-  const [caption, setCaption] = useState("");
-  const bgs = ["from-earth to-gold", "from-verified to-earth", "from-gold to-destructive", "from-ink to-earth"];
-  const [bg, setBg] = useState(bgs[0]);
-  const sampleMedia = [temple1, temple2, temple3, temple4];
-  const [media, setMedia] = useState(sampleMedia[0]);
-
-  return (
-    <div className="absolute inset-0 z-40 bg-ink/50 flex items-end" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="w-full bg-card rounded-t-3xl max-h-[92%] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <button onClick={onClose} className="text-ink-soft"><X className="size-5" /></button>
-          <div className="font-bold text-ink">New Post</div>
-          <button
-            onClick={() => onPost({ kind: type, media: type === "text" ? undefined : media, bg: type === "text" ? bg : undefined, caption: caption || "Sharing a temple moment 🙏" })}
-            className="text-earth font-bold text-sm"
-          >Share</button>
-        </div>
-
-        <div className="flex gap-2 px-5 pt-4">
-          {([
-            ["image", ImageIcon, "Photo"],
-            ["reel", Film, "Reel"],
-            ["text", TypeIcon, "Text"],
-          ] as const).map(([k, Icon, label]) => (
-            <button key={k} onClick={() => setType(k)} className={`flex-1 h-11 rounded-xl flex items-center justify-center gap-1.5 text-sm font-semibold ${type === k ? "bg-earth text-primary-foreground" : "bg-muted text-ink"}`}>
-              <Icon className="size-4" /> {label}
-            </button>
-          ))}
-        </div>
-
-        <div className="p-5 overflow-y-auto">
-          {type === "image" && (
-            <>
-              <div className="w-full aspect-square rounded-2xl overflow-hidden bg-muted">
-                <img src={media} className="w-full h-full object-cover" alt="" />
-              </div>
-              <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar">
-                <button className="shrink-0 size-16 rounded-xl bg-muted grid place-items-center text-ink-soft"><Camera className="size-6" /></button>
-                {sampleMedia.map((m) => (
-                  <button key={m} onClick={() => setMedia(m)} className={`shrink-0 size-16 rounded-xl overflow-hidden ring-2 ${media === m ? "ring-earth" : "ring-transparent"}`}>
-                    <img src={m} className="w-full h-full object-cover" alt="" />
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-          {type === "reel" && (
-            <>
-              <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden bg-black">
-                <img src={media} className="w-full h-full object-cover opacity-90" alt="" />
-                <div className="absolute inset-0 grid place-items-center">
-                  <div className="size-16 rounded-full bg-black/50 grid place-items-center ring-2 ring-white/70"><Play className="size-7 text-white fill-white" /></div>
-                </div>
-                <div className="absolute top-3 left-3 px-2 py-1 rounded-full bg-black/60 text-white text-[10px] font-bold flex items-center gap-1"><Film className="size-3" /> REEL · 0:28</div>
-              </div>
-              <div className="flex gap-2 mt-3">
-                <button className="flex-1 h-12 rounded-xl bg-muted text-ink font-semibold text-sm flex items-center justify-center gap-2"><Video className="size-4" /> Record</button>
-                <button className="flex-1 h-12 rounded-xl bg-muted text-ink font-semibold text-sm flex items-center justify-center gap-2"><Film className="size-4" /> Upload</button>
-              </div>
-            </>
-          )}
-          {type === "text" && (
-            <>
-              <div className={`w-full aspect-square rounded-2xl bg-gradient-to-br ${bg} grid place-items-center p-6`}>
-                <p className="font-serif text-primary-foreground text-xl text-center leading-snug">{caption || "Write your thought…"}</p>
-              </div>
-              <div className="flex gap-2 mt-3">
-                {bgs.map((b) => (
-                  <button key={b} onClick={() => setBg(b)} className={`flex-1 h-10 rounded-xl bg-gradient-to-br ${b} ring-2 ${bg === b ? "ring-ink" : "ring-transparent"}`} />
-                ))}
-              </div>
-            </>
-          )}
-
-          <textarea
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="Write a caption…  #temple #darshan"
-            className="w-full mt-4 min-h-24 p-3 rounded-2xl bg-muted text-sm text-ink outline-none resize-none"
-          />
-
-          <div className="mt-3 flex items-center gap-2 text-xs text-ink-soft">
-            <MapPin className="size-4" /> Tag temple location
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StoryViewer({ id, onClose }: { id: string; onClose: () => void }) {
-  const s = statuses.find((x) => x.id === id) || statuses[0];
-  return (
-    <div className="absolute inset-0 z-40 bg-ink flex flex-col" onClick={onClose}>
-      <div className="h-1 mx-3 mt-3 rounded-full bg-white/30 overflow-hidden">
-        <div className="h-full w-2/3 bg-white" />
-      </div>
-      <div className="flex items-center gap-3 px-4 py-3 text-white">
-        <div className="size-9 rounded-full ring-2 ring-white overflow-hidden">
-          <Avatar name={s.name} img={s.avatar} initials={s.initials} size={36} />
-        </div>
-        <div className="flex-1">
-          <div className="text-sm font-semibold">{s.name}</div>
-          <div className="text-[11px] opacity-70">{s.time}</div>
-        </div>
-        <button className="text-white/80"><X className="size-5" /></button>
-      </div>
-      <div className="flex-1 grid place-items-center">
-        {s.avatar ? (
-          <img src={s.avatar} alt="" className="w-full max-h-full object-contain" />
-        ) : (
-          <div className="text-white font-serif text-2xl px-8 text-center">{s.name}'s temple moment 🙏</div>
-        )}
-      </div>
-      <div className="p-4 flex items-center gap-2">
-        <input placeholder={`Reply to ${s.name}…`} className="flex-1 h-11 px-4 rounded-full bg-white/10 text-white placeholder:text-white/60 outline-none text-sm" />
-        <button className="size-10 grid place-items-center text-white"><Heart className="size-6" /></button>
-        <button className="size-10 grid place-items-center text-white"><Send className="size-6" /></button>
-      </div>
-    </div>
-  );
-}
 
 /* ---------------- PROFILE ---------------- */
 function ProfileScreen({ profile, openRefer, openAgent, openHub }: { profile: { name: string; phone: string }; openRefer: () => void; openAgent: () => void; openHub: () => void }) {
@@ -1383,15 +1015,16 @@ function ProfileScreen({ profile, openRefer, openAgent, openHub }: { profile: { 
           <ChevronRight className="size-5 text-earth" />
         </button>
 
-        {/* Add a listing with Meenakshi */}
+        {/* Add full listing details (guided) */}
         <button onClick={openHub} className="w-full p-4 rounded-2xl bg-card ring-1 ring-border flex items-center gap-3 text-left">
-          <img src={meenakshiImg} alt="Meenakshi" width={816} height={816} loading="lazy" className="size-12 rounded-xl object-cover object-top" />
+          <div className="size-12 rounded-xl bg-earth-soft grid place-items-center"><FilePlus2 className="size-6 text-earth" /></div>
           <div className="flex-1">
-            <div className="font-semibold text-ink">Add a Listing with Meenakshi</div>
-            <div className="text-xs text-ink-soft">Temple, service, event or local business</div>
+            <div className="font-semibold text-ink">Add Full Listing Details</div>
+            <div className="text-xs text-ink-soft">Temple, service, event or local business — guided</div>
           </div>
           <ChevronRight className="size-5 text-earth" />
         </button>
+
 
         {/* Agent dashboard */}
         <button onClick={openAgent} className="w-full p-4 rounded-2xl bg-card ring-1 ring-border flex items-center gap-3 text-left">
