@@ -172,7 +172,7 @@ export function SubmitScreen({
                     <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
                       <div className="h-full bg-earth rounded-full" style={{ width: `${it.completeness}%` }} />
                     </div>
-                    <button onClick={() => openFullFlow(it.kind)} className="mt-3 w-full h-11 rounded-xl bg-earth-soft text-earth font-bold text-sm flex items-center justify-center gap-2">
+                    <button onClick={() => openMore(it)} className="mt-3 w-full h-11 rounded-xl bg-earth-soft text-earth font-bold text-sm flex items-center justify-center gap-2">
                       <Sparkles className="size-4" /> Add more details ({it.completeness}% complete)
                     </button>
                   </>
@@ -187,7 +187,7 @@ export function SubmitScreen({
 }
 
 /* ---------------- QUICK FORM (4 fields) ---------------- */
-function QuickForm({ kind, back, onSave }: { kind: SubmitKind; back: () => void; onSave: (name: string, place: string) => void }) {
+function QuickForm({ kind, back, onSave }: { kind: SubmitKind; back: () => void; onSave: (values: Record<string, string>) => void }) {
   const meta = kindMeta[kind];
   const [values, setValues] = useState<Record<string, string>>({});
   const [photo, setPhoto] = useState(false);
@@ -250,7 +250,7 @@ function QuickForm({ kind, back, onSave }: { kind: SubmitKind; back: () => void;
       <div className="p-4 bg-card border-t border-border shrink-0">
         <button
           disabled={!ready}
-          onClick={() => onSave(values.name ?? "Untitled", values.place ?? "Kerala")}
+          onClick={() => onSave(values)}
           className="w-full h-16 rounded-2xl bg-earth text-primary-foreground font-bold text-lg shadow-soft disabled:opacity-40"
         >
           Save
