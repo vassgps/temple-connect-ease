@@ -83,14 +83,16 @@ export function SubmitScreen({
   logoMark, openFullFlow,
 }: {
   logoMark: string;
-  openFullFlow: (kind: SubmitKind) => void;
+  openFullFlow: (kind: SubmitKind, prefill?: Record<string, string>) => void;
 }) {
   const [form, setForm] = useState<SubmitKind | null>(null);
   const [items, setItems] = useState<Submission[]>(seed);
   const [saved, setSaved] = useState<Submission | null>(null);
 
+  const openMore = (it: Submission) => openFullFlow(it.kind, toPrefill(it.kind, it.data ?? { name: it.name, place: it.place }));
+
   if (saved) {
-    return <SavedCard item={saved} onDone={() => setSaved(null)} onMore={() => { const k = saved.kind; setSaved(null); openFullFlow(k); }} />;
+    return <SavedCard item={saved} onDone={() => setSaved(null)} onMore={() => { const s = saved; setSaved(null); openMore(s); }} />;
   }
 
   if (form) {
@@ -98,8 +100,12 @@ export function SubmitScreen({
       <QuickForm
         kind={form}
         back={() => setForm(null)}
-        onSave={(name, place) => {
-          const item: Submission = { id: `u${Date.now()}`, kind: form, name, place, status: "pending", completeness: 40 };
+        onSave={(values) => {
+          const item: Submission = {
+            id: `u${Date.now()}`, kind: form,
+            name: values.name ?? "Untitled", place: values.place ?? "Kerala",
+            status: "pending", completeness: 40, data: values,
+          };
           setItems((p) => [item, ...p]);
           setForm(null);
           setSaved(item);
