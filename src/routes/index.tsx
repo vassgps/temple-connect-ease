@@ -366,15 +366,14 @@ function AIChat({ back }: { back: () => void }) {
     <div className="flex-1 flex flex-col min-h-0 bg-chat-bg">
       <header className="px-3 py-3 bg-card border-b border-border flex items-center gap-3 shrink-0">
         <button onClick={back} className="size-10 grid place-items-center"><ArrowLeft className="size-5 text-ink" /></button>
-        <div className="size-10 rounded-full bg-gradient-to-br from-earth to-gold grid place-items-center ring-2 ring-cream">
-          <img src={logoMark} alt="" className="size-7" />
-        </div>
+        <img src={meenakshiImg} alt="Meenakshi" width={816} height={816} loading="lazy" className="size-10 rounded-full object-cover object-top ring-2 ring-cream" />
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-ink flex items-center gap-1.5">
-            Ask TempleAddress <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-earth text-primary-foreground">AI</span>
+            Meenakshi <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-earth text-primary-foreground">AI</span>
           </div>
-          <div className="text-xs text-verified flex items-center gap-1"><Bot className="size-3" /> Powered by TempleAddress AI</div>
+          <div className="text-xs text-verified flex items-center gap-1"><Bot className="size-3" /> TempleAddress AI · temples, festivals & bookings</div>
         </div>
+
         <button className="size-10 grid place-items-center"><MoreVertical className="size-5 text-ink-soft" /></button>
       </header>
 
