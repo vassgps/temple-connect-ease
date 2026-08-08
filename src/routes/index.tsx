@@ -1,13 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  MessageCircle, Compass, CalendarCheck, Circle, User,
+  MessageCircle, Compass, CalendarCheck, FilePlus2, User,
   Search, Phone, Video, MoreVertical, ArrowLeft, Plus, Mic, Smile,
   MapPin, Star, ShieldCheck, ChevronRight, Check, CheckCheck,
   Flame, Sparkles, Heart, CalendarDays, CreditCard, Share2, Download,
   Image as ImageIcon, FileText, Camera, Bot, Gift, Wallet, BarChart3,
   Bell, Users, Send, X, Megaphone, Edit3,
-  Bookmark, Play, Film, Type as TypeIcon, MoreHorizontal, Volume2,
 } from "lucide-react";
 import temple1 from "@/assets/temple-1.jpg";
 import temple2 from "@/assets/temple-2.jpg";
@@ -16,7 +15,9 @@ import temple4 from "@/assets/temple-4.jpg";
 import logoMarkAsset from "@/assets/logo-mark.png.asset.json";
 import logoFullAsset from "@/assets/logo-full.png.asset.json";
 import { ListingHub, MyListings, MeenakshiFlow, type FlowKind } from "@/components/listing-flow";
+import { SubmitScreen, type SubmitKind } from "@/components/quick-submit";
 import meenakshiImg from "@/assets/meenakshi.jpg";
+
 
 
 const logoMark = logoMarkAsset.url;
