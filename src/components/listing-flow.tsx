@@ -374,7 +374,7 @@ function FlowHeader({ title, sub, phone, lang, setLang, back, progress, idx, tot
         <div className="h-1.5 flex-1 rounded-full bg-cream/25 overflow-hidden">
           <div className="h-full bg-cream rounded-full transition-all" style={{ width: `${Math.round(progress * 100)}%` }} />
         </div>
-        <span className="text-[11px] font-semibold shrink-0">Step {idx} of {total}</span>
+        <span className="text-[11px] font-semibold shrink-0">Step {Math.min(idx + 1, total)} of {total}</span>
       </div>
     </header>
   );
