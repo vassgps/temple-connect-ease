@@ -341,7 +341,7 @@ function AIChat({ back }: { back: () => void }) {
   const [input, setInput] = useState("");
   const [showAttach, setShowAttach] = useState(false);
 
-  const suggestions = ["Nearby temples", "Next festival", "Book Pushpanjali", "Malayalam pooja list"];
+  const suggestions = ["Nearby temples", "Next festival", "My bookings", "Pooja timings"];
 
   const send = (text?: string, kind: "text" | "image" | "file" | "voice" = "text", meta?: string) => {
     const t = text ?? input.trim();
