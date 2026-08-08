@@ -81,11 +81,8 @@ const chats = [
   { id: "c5", name: "Ravi (Electrician)", last: "Light repair done ✓", time: "Mon", unread: 0, group: false, avatar: null, initials: "RV", service: true },
 ];
 
-const statuses = [
-  { id: "s1", name: "Vaikom Temple", ml: "വൈക്കം", time: "1h ago", avatar: temple1 },
-  { id: "s2", name: "Guruvayur Devotees", time: "3h ago", avatar: temple3 },
-  { id: "s3", name: "Ramesh Pandit Ji", time: "5h ago", avatar: null, initials: "RP" },
-];
+
+
 
 function App() {
   const [tab, setTab] = useState<Tab>("chats");
