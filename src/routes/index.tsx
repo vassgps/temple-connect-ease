@@ -1015,15 +1015,16 @@ function ProfileScreen({ profile, openRefer, openAgent, openHub }: { profile: { 
           <ChevronRight className="size-5 text-earth" />
         </button>
 
-        {/* Add a listing with Meenakshi */}
+        {/* Add full listing details (guided) */}
         <button onClick={openHub} className="w-full p-4 rounded-2xl bg-card ring-1 ring-border flex items-center gap-3 text-left">
-          <img src={meenakshiImg} alt="Meenakshi" width={816} height={816} loading="lazy" className="size-12 rounded-xl object-cover object-top" />
+          <div className="size-12 rounded-xl bg-earth-soft grid place-items-center"><FilePlus2 className="size-6 text-earth" /></div>
           <div className="flex-1">
-            <div className="font-semibold text-ink">Add a Listing with Meenakshi</div>
-            <div className="text-xs text-ink-soft">Temple, service, event or local business</div>
+            <div className="font-semibold text-ink">Add Full Listing Details</div>
+            <div className="text-xs text-ink-soft">Temple, service, event or local business — guided</div>
           </div>
           <ChevronRight className="size-5 text-earth" />
         </button>
+
 
         {/* Agent dashboard */}
         <button onClick={openAgent} className="w-full p-4 rounded-2xl bg-card ring-1 ring-border flex items-center gap-3 text-left">
