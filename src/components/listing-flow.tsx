@@ -202,19 +202,33 @@ type Bubble = { id: number; from: "bot" | "me"; text?: string; kind?: "text" | "
 
 const now = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
-export function MeenakshiFlow({ kind, phone, back, onSubmitted }: { kind: FlowKind; phone: string; back: () => void; onSubmitted: () => void }) {
+export function MeenakshiFlow({ kind, phone, back, onSubmitted, prefill }: { kind: FlowKind; phone: string; back: () => void; onSubmitted: () => void; prefill?: Record<string, string> }) {
   const meta = flowMeta[kind];
   const steps = meta.steps;
   const total = steps.length;
 
+  const known = prefill ?? {};
+  const isKnown = (k: string) => (known[k] ?? "").trim().length > 0;
+  const nextOpen = (i: number) => { let j = i; while (j < steps.length && isKnown(steps[j].key)) j += 1; return j; };
+  const listingName = known.name ?? "";
+  const filledCount = steps.filter((s) => isKnown(s.key)).length;
+
   const [started, setStarted] = useState(false);
   const [idx, setIdx] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [msgs, setMsgs] = useState<Bubble[]>([
-    { id: 1, from: "bot", text: `🙏 Welcome to Temple Address — Add ${meta.title}` },
-    { id: 2, from: "bot", text: "I'll help you add it step-by-step, just like a WhatsApp chat." },
-    { id: 3, from: "bot", text: "Before starting: please be inside the premises and allow permissions — Location, Camera, Gallery, Microphone." },
-  ]);
+  const [answers, setAnswers] = useState<Record<string, string>>(known);
+  const [msgs, setMsgs] = useState<Bubble[]>(
+    listingName
+      ? [
+          { id: 1, from: "bot", text: `🙏 Updating listing — ${listingName}` },
+          { id: 2, from: "bot", text: `Type: ${meta.title.replace(" Details", "")} · ${filledCount} detail(s) already saved from your quick form.` },
+          { id: 3, from: "bot", text: "I'll only ask what's still missing. Please allow Location, Camera, Gallery and Microphone." },
+        ]
+      : [
+          { id: 1, from: "bot", text: `🙏 Welcome to Temple Address — Add ${meta.title}` },
+          { id: 2, from: "bot", text: "I'll help you add it step-by-step, just like a WhatsApp chat." },
+          { id: 3, from: "bot", text: "Before starting: please be inside the premises and allow permissions — Location, Camera, Gallery, Microphone." },
+        ],
+  );
   const [review, setReview] = useState(false);
   const [done, setDone] = useState(false);
   const [lang, setLang] = useState<"EN" | "ML">("EN");
@@ -237,8 +251,10 @@ export function MeenakshiFlow({ kind, phone, back, onSubmitted }: { kind: FlowKi
 
   const start = () => {
     setStarted(true);
-    push({ from: "me", text: `Start ${meta.title} Flow` });
-    setTimeout(() => ask(0), 250);
+    push({ from: "me", text: listingName ? `Continue ${listingName}` : `Start ${meta.title} Flow` });
+    const first = nextOpen(0);
+    setIdx(first);
+    setTimeout(() => ask(first), 250);
   };
 
   const answer = (value: string, bubble?: Omit<Bubble, "id" | "from">) => {

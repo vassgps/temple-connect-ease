@@ -111,7 +111,7 @@ function App() {
               {view.name === "agent" && <AgentDashboard back={() => setView({ name: "tab" })} openHub={() => setView({ name: "listing-hub" })} openListings={() => setView({ name: "my-listings" })} />}
               {view.name === "listing-hub" && <ListingHub phone={profile.phone} back={() => setView({ name: "tab" })} start={(k) => setView({ name: "meenakshi", kind: k })} openListings={() => setView({ name: "my-listings" })} />}
               {view.name === "my-listings" && <MyListings back={() => setView({ name: "listing-hub" })} />}
-              {view.name === "meenakshi" && <MeenakshiFlow kind={view.kind} prefill={view.prefill} phone={profile.phone} back={() => setView({ name: view.prefill ? "tab" : "listing-hub" })} onSubmitted={() => setView({ name: "my-listings" })} />}
+              {view.name === "meenakshi" && <MeenakshiFlow kind={view.kind} prefill={view.prefill} phone={profile.phone} back={() => setView(view.prefill ? { name: "tab" } : { name: "listing-hub" })} onSubmitted={() => setView({ name: "my-listings" })} />}
               {view.name === "events" && <EventsFeed back={() => setView({ name: "tab" })} open={(id) => setView({ name: "temple", id })} />}
 
             </div>
