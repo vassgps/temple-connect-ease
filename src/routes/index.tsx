@@ -205,7 +205,7 @@ function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
     { id: "chats", label: "Chats", icon: MessageCircle, badge: 8 },
     { id: "explore", label: "Explore", icon: Compass },
     { id: "bookings", label: "Bookings", icon: CalendarCheck },
-    { id: "status", label: "Status", icon: Circle },
+    { id: "submit", label: "Submit", icon: FilePlus2 },
     { id: "profile", label: "Profile", icon: User },
   ];
   return (
