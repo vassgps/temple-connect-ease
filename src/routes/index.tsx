@@ -41,7 +41,7 @@ type View =
   | { name: "agent" }
   | { name: "listing-hub" }
   | { name: "my-listings" }
-  | { name: "meenakshi"; kind: FlowKind }
+  | { name: "meenakshi"; kind: FlowKind; prefill?: Record<string, string> }
   | { name: "events" };
 
 
@@ -111,7 +111,7 @@ function App() {
               {view.name === "agent" && <AgentDashboard back={() => setView({ name: "tab" })} openHub={() => setView({ name: "listing-hub" })} openListings={() => setView({ name: "my-listings" })} />}
               {view.name === "listing-hub" && <ListingHub phone={profile.phone} back={() => setView({ name: "tab" })} start={(k) => setView({ name: "meenakshi", kind: k })} openListings={() => setView({ name: "my-listings" })} />}
               {view.name === "my-listings" && <MyListings back={() => setView({ name: "listing-hub" })} />}
-              {view.name === "meenakshi" && <MeenakshiFlow kind={view.kind} phone={profile.phone} back={() => setView({ name: "listing-hub" })} onSubmitted={() => setView({ name: "my-listings" })} />}
+              {view.name === "meenakshi" && <MeenakshiFlow kind={view.kind} prefill={view.prefill} phone={profile.phone} back={() => setView({ name: view.prefill ? "tab" : "listing-hub" })} onSubmitted={() => setView({ name: "my-listings" })} />}
               {view.name === "events" && <EventsFeed back={() => setView({ name: "tab" })} open={(id) => setView({ name: "temple", id })} />}
 
             </div>
@@ -230,7 +230,7 @@ function TabView({ tab, setView, setTab, profile }: { tab: Tab; setView: (v: Vie
   if (tab === "chats") return <ChatsList open={(id) => setView({ name: "chat", id })} openAI={() => setView({ name: "ai-chat" })} />;
   if (tab === "explore") return <ExploreTemples open={(id) => setView({ name: "temple", id })} openEvents={() => setView({ name: "events" })} />;
   if (tab === "bookings") return <BookingsList open={(id) => setView({ name: "temple", id })} goExplore={() => setTab("explore")} />;
-  if (tab === "submit") return <SubmitScreen logoMark={logoMark} openFullFlow={(k: SubmitKind) => setView({ name: "meenakshi", kind: k === "festival" ? "event" : k })} />;
+  if (tab === "submit") return <SubmitScreen logoMark={logoMark} openFullFlow={(k: SubmitKind, prefill?: Record<string, string>) => setView({ name: "meenakshi", kind: k === "festival" ? "event" : k, prefill })} />;
 
   return <ProfileScreen profile={profile} openRefer={() => setView({ name: "refer" })} openAgent={() => setView({ name: "agent" })} openHub={() => setView({ name: "listing-hub" })} />;
 }
