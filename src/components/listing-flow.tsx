@@ -73,13 +73,14 @@ const templeSteps: Step[] = [
 
 export type FlowKind = "temple" | "service" | "event" | "business";
 
-const flowMeta: Record<FlowKind, { title: string; steps: Step[] }> = {
-  temple: { title: "Temple Details", steps: templeSteps },
+const flowMeta: Record<FlowKind, { title: string; listingType: ListingType; steps: Step[] }> = {
+  temple: { title: "Temple Details", listingType: "temples", steps: templeSteps },
   service: {
     title: "Service Details",
+    listingType: "services",
     steps: [
       { key: "name", section: "Basic Details", q: "What is your service name? 🙏", type: "text" },
-      { key: "category", section: "Basic Details", q: "Which service category?", type: "choice", opts: ["PRIEST / PANDIT", "FLOWERS & GARLAND", "SOUND & LIGHTS", "ELECTRICIAN", "CATERING", "TRANSPORT"] },
+      { key: "category", section: "Basic Details", q: "Which service category?", type: "choice", source: "categories" },
       { key: "about", section: "Basic Details", q: "Tell me about your service. Type or send a voice note 🎤", type: "long" },
       { key: "photo", section: "Photos & Media", q: "Share a photo for your service profile.", type: "media" },
       { key: "city", section: "Location", q: "Which city / area do you serve?", type: "text" },
@@ -91,11 +92,12 @@ const flowMeta: Record<FlowKind, { title: string; steps: Step[] }> = {
   },
   event: {
     title: "Event Details",
+    listingType: "festivals",
     steps: [
       { key: "name", section: "Basic Details", q: "What is the event name? 🎉", type: "text" },
       { key: "temple", section: "Basic Details", q: "Which temple or place is it at?", type: "text" },
-      { key: "kind", section: "Basic Details", q: "Event type?", type: "choice", opts: ["FESTIVAL", "SPECIAL POOJA", "ANNADANAM", "CULTURAL PROGRAM", "PROCESSION"] },
-      { key: "start", section: "Dates", q: "Start date?", type: "text", hint: "e.g. 22 Jul 2026" },
+      { key: "kind", section: "Basic Details", q: "Event type?", type: "choice", source: "categories" },
+      { key: "start", section: "Dates", q: "Start date?", type: "text", hint: "YYYY-MM-DD" },
       { key: "end", section: "Dates", q: "End date?", type: "text", optional: true },
       { key: "time", section: "Dates", q: "Main event time?", type: "time" },
       { key: "performers", section: "Details", q: "Performers or chief guests?", type: "long", optional: true },
@@ -105,9 +107,10 @@ const flowMeta: Record<FlowKind, { title: string; steps: Step[] }> = {
   },
   business: {
     title: "Local Business",
+    listingType: "local_business",
     steps: [
       { key: "name", section: "Basic Details", q: "Business name?", type: "text" },
-      { key: "category", section: "Basic Details", q: "Which type of business?", type: "choice", opts: ["HOTEL / LODGE", "RESTAURANT", "TRAVELS", "POOJA SHOP", "TAXI", "OTHER SHOP"] },
+      { key: "category", section: "Basic Details", q: "Which type of business?", type: "choice", source: "categories" },
       { key: "about", section: "Basic Details", q: "Tell me about the business.", type: "long" },
       { key: "photo", section: "Photos & Media", q: "Share a photo of the shop front.", type: "media" },
       { key: "address", section: "Location", q: "Full address?", type: "long" },
@@ -117,6 +120,53 @@ const flowMeta: Record<FlowKind, { title: string; steps: Step[] }> = {
     ],
   },
 };
+
+/** Map chat answers onto the listing-submission API payload. */
+function toPayload(kind: FlowKind, a: Record<string, string>) {
+  const meta = flowMeta[kind];
+  return {
+    listing_type: meta.listingType,
+    title: a.name ?? "",
+    name: a.name ?? "",
+    subtitle: a.subtitle,
+    description: a.about,
+    location: a.landmark ?? a.city ?? a.temple,
+    address: a.address,
+    city: a.city,
+    state: a.state,
+    country: "India",
+    pincode: a.pincode,
+    contact_number: a.phone,
+    whatsapp_number: a.whatsapp ?? a.phone,
+    email: a.email,
+    category_slug: a.category ?? a.kind,
+    main_deity: a.mainDeity,
+    other_deities: a.otherDeities,
+    designated_person: a.personName,
+    designation: a.designation,
+    management_type: a.management,
+    morning_opening_time: a.mOpen,
+    morning_closing_time: a.mClose,
+    evening_opening_time: a.eOpen,
+    evening_closing_time: a.eClose,
+    story: a.story,
+    history: a.history,
+    dress_code: a.dress,
+    speciality: a.special,
+    notes: a.notes,
+    thanthri: a.thanthri,
+    upi_id: a.upi,
+    start_date: a.start,
+    end_date: a.end,
+    event_time: a.time,
+    performers: a.performers,
+    rate: a.rate,
+    offerings: a.offerings,
+    opening_hours: a.hours,
+    gps: a.gps,
+  };
+}
+
 
 /* ================= LISTING HUB ================= */
 const hubCards: { kind: FlowKind | "listings"; title: string; sub: string; icon: typeof Landmark; cls: string }[] = [
