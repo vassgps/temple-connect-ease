@@ -311,6 +311,36 @@ export type Notification = {
   is_read?: boolean;
 };
 
+/** A temple/system notification thread shown in the inbox. */
+export type NotificationThread = {
+  id?: number | string;
+  thread_id?: number | string;
+  uuid?: string;
+  title?: string;
+  name?: string;
+  temple_name?: string;
+  listing_title?: string;
+  image?: string | null;
+  temple_image?: string | null;
+  avatar?: string | null;
+  latest_message?: string | null;
+  last_message?: string | null;
+  latest_notification?: string | { message?: string; body?: string; title?: string; created_at?: string } | null;
+  latest_time?: string | null;
+  last_message_at?: string | null;
+  updated_at?: string | null;
+  created_at?: string | null;
+  unread_count?: number;
+  unread?: number;
+};
+
+export type NotificationThreadDetail = NotificationThread & {
+  notifications?: Notification[];
+  messages?: Notification[];
+  results?: Notification[];
+};
+
+
 export type Booking = {
   uuid?: string;
   booking_code?: string;
@@ -373,6 +403,11 @@ export const authApi = {
   wallet: () => api.get("/api/v1/users/wallet/") as Promise<Record<string, unknown>>,
   walletTransactions: () => api.get("/api/v1/users/wallet/transactions/"),
   notifications: () => api.get("/api/v1/users/notifications/"),
+  notificationThreads: () => api.get("/api/v1/users/notification-threads/"),
+  notificationThread: (id: string) =>
+    api.get(`/api/v1/users/notification-threads/${id}/`) as Promise<NotificationThreadDetail>,
+  markThreadRead: (id: string) => api.post(`/api/v1/users/notification-threads/${id}/read/`, {}),
+
   logout: () => tokens.clear(),
 };
 
