@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, ArrowRight, Camera, Check, CheckCheck, ChevronDown,
   Image as ImageIcon, Landmark, MapPin, Mic, MoreVertical, Send, Sparkles,
   CalendarDays, Store, ListChecks, Play, Edit3, ShieldCheck, FileText, X,
+  Loader2, Inbox,
 } from "lucide-react";
 import meenakshi from "@/assets/meenakshi.jpg";
 import logoMarkAsset from "@/assets/logo-mark.png.asset.json";
+import {
+  catalogApi, listingApi, listOf, errorText,
+  type Deity, type ListingType, type Submission,
+} from "@/lib/api";
 
 const logoMark = logoMarkAsset.url;
 
-/* ================= STEP DEFINITIONS (37 steps) ================= */
+/* ================= STEP DEFINITIONS ================= */
 type StepType = "text" | "long" | "choice" | "multi" | "media" | "gps" | "time";
 type Step = {
   key: string;
@@ -17,15 +23,17 @@ type Step = {
   q: string;
   type: StepType;
   opts?: string[];
+  /** master-data source fetched from the backend */
+  source?: "deities" | "categories";
   optional?: boolean;
   hint?: string;
   multiFiles?: boolean;
 };
 
 const templeSteps: Step[] = [
-  { key: "name", section: "Basic Details", q: "What is the temple's name? 🛕", type: "text", hint: "e.g. Sree Krishna Temple" },
+  { key: "name", section: "Basic Details", q: "What is the temple's name? 🛕", type: "text", hint: "Temple name" },
   { key: "subtitle", section: "Basic Details", q: "Any subtitle or short tagline?", type: "text", optional: true },
-  { key: "category", section: "Basic Details", q: "Which category does it belong to?", type: "choice", opts: ["HINDU TEMPLES", "KAVU", "JAIN TEMPLES", "BUDDHIST PAGODA", "GURUDWARA", "CHURCH", "MOSQUE"] },
+  { key: "category", section: "Basic Details", q: "Which category does it belong to?", type: "choice", source: "categories" },
   { key: "about", section: "About the Temple", q: "Tell me a little about the temple. You can type or send a voice note 🎤", type: "long" },
   { key: "mainPhoto", section: "Photos & Media", q: "Please share the main photo of the temple.", type: "media" },
   { key: "gallery", section: "Photos & Media", q: "Any more photos for the gallery?", type: "media", multiFiles: true, optional: true },
@@ -44,8 +52,8 @@ const templeSteps: Step[] = [
   { key: "designation", section: "People in Charge", q: "Their designation?", type: "choice", opts: ["Trustee", "Secretary", "President", "Manager", "Melsanthi / Priest"] },
   { key: "personPhone", section: "People in Charge", q: "Their contact number?", type: "text" },
   { key: "management", section: "Religious Info", q: "Type of management?", type: "choice", opts: ["Trust", "Devaswom Board", "Family / Private", "Community Committee", "Government"] },
-  { key: "mainDeity", section: "Religious Info", q: "Who is the main deity?", type: "choice", opts: ["LORD GANESH", "LORD KRISHNA", "LORD SHIVA", "LORD AYYAPPA", "LORD BHAGAVATHY", "LORD VISHNU", "KIRATHAMOORTHY"] },
-  { key: "otherDeities", section: "Religious Info", q: "Any other deities worshipped here?", type: "multi", opts: ["KIRATHAMOORTHY", "LORD AYYAPPA", "LORD BHAGAVATHY", "LORD GANESH", "LORD KRISHNA", "NAGA DEVATHA", "LORD SHIVA"], optional: true },
+  { key: "mainDeity", section: "Religious Info", q: "Who is the main deity?", type: "choice", source: "deities" },
+  { key: "otherDeities", section: "Religious Info", q: "Any other deities worshipped here?", type: "multi", source: "deities", optional: true },
   { key: "mOpen", section: "Timings", q: "Morning opening time?", type: "time" },
   { key: "mClose", section: "Timings", q: "Morning closing time?", type: "time" },
   { key: "eOpen", section: "Timings", q: "Evening opening time?", type: "time" },
@@ -62,15 +70,17 @@ const templeSteps: Step[] = [
   { key: "eventMedia", section: "Events", q: "Attach photos or files about events?", type: "media", multiFiles: true, optional: true },
 ];
 
+
 export type FlowKind = "temple" | "service" | "event" | "business";
 
-const flowMeta: Record<FlowKind, { title: string; steps: Step[] }> = {
-  temple: { title: "Temple Details", steps: templeSteps },
+const flowMeta: Record<FlowKind, { title: string; listingType: ListingType; steps: Step[] }> = {
+  temple: { title: "Temple Details", listingType: "temples", steps: templeSteps },
   service: {
     title: "Service Details",
+    listingType: "services",
     steps: [
       { key: "name", section: "Basic Details", q: "What is your service name? 🙏", type: "text" },
-      { key: "category", section: "Basic Details", q: "Which service category?", type: "choice", opts: ["PRIEST / PANDIT", "FLOWERS & GARLAND", "SOUND & LIGHTS", "ELECTRICIAN", "CATERING", "TRANSPORT"] },
+      { key: "category", section: "Basic Details", q: "Which service category?", type: "choice", source: "categories" },
       { key: "about", section: "Basic Details", q: "Tell me about your service. Type or send a voice note 🎤", type: "long" },
       { key: "photo", section: "Photos & Media", q: "Share a photo for your service profile.", type: "media" },
       { key: "city", section: "Location", q: "Which city / area do you serve?", type: "text" },
@@ -82,11 +92,12 @@ const flowMeta: Record<FlowKind, { title: string; steps: Step[] }> = {
   },
   event: {
     title: "Event Details",
+    listingType: "festivals",
     steps: [
       { key: "name", section: "Basic Details", q: "What is the event name? 🎉", type: "text" },
       { key: "temple", section: "Basic Details", q: "Which temple or place is it at?", type: "text" },
-      { key: "kind", section: "Basic Details", q: "Event type?", type: "choice", opts: ["FESTIVAL", "SPECIAL POOJA", "ANNADANAM", "CULTURAL PROGRAM", "PROCESSION"] },
-      { key: "start", section: "Dates", q: "Start date?", type: "text", hint: "e.g. 22 Jul 2026" },
+      { key: "kind", section: "Basic Details", q: "Event type?", type: "choice", source: "categories" },
+      { key: "start", section: "Dates", q: "Start date?", type: "text", hint: "YYYY-MM-DD" },
       { key: "end", section: "Dates", q: "End date?", type: "text", optional: true },
       { key: "time", section: "Dates", q: "Main event time?", type: "time" },
       { key: "performers", section: "Details", q: "Performers or chief guests?", type: "long", optional: true },
@@ -96,9 +107,10 @@ const flowMeta: Record<FlowKind, { title: string; steps: Step[] }> = {
   },
   business: {
     title: "Local Business",
+    listingType: "local_business",
     steps: [
       { key: "name", section: "Basic Details", q: "Business name?", type: "text" },
-      { key: "category", section: "Basic Details", q: "Which type of business?", type: "choice", opts: ["HOTEL / LODGE", "RESTAURANT", "TRAVELS", "POOJA SHOP", "TAXI", "OTHER SHOP"] },
+      { key: "category", section: "Basic Details", q: "Which type of business?", type: "choice", source: "categories" },
       { key: "about", section: "Basic Details", q: "Tell me about the business.", type: "long" },
       { key: "photo", section: "Photos & Media", q: "Share a photo of the shop front.", type: "media" },
       { key: "address", section: "Location", q: "Full address?", type: "long" },
@@ -108,6 +120,53 @@ const flowMeta: Record<FlowKind, { title: string; steps: Step[] }> = {
     ],
   },
 };
+
+/** Map chat answers onto the listing-submission API payload. */
+function toPayload(kind: FlowKind, a: Record<string, string>) {
+  const meta = flowMeta[kind];
+  return {
+    listing_type: meta.listingType,
+    title: a.name ?? "",
+    name: a.name ?? "",
+    subtitle: a.subtitle,
+    description: a.about,
+    location: a.landmark ?? a.city ?? a.temple,
+    address: a.address,
+    city: a.city,
+    state: a.state,
+    country: "India",
+    pincode: a.pincode,
+    contact_number: a.phone,
+    whatsapp_number: a.whatsapp ?? a.phone,
+    email: a.email,
+    category_slug: a.category ?? a.kind,
+    main_deity: a.mainDeity,
+    other_deities: a.otherDeities,
+    designated_person: a.personName,
+    designation: a.designation,
+    management_type: a.management,
+    morning_opening_time: a.mOpen,
+    morning_closing_time: a.mClose,
+    evening_opening_time: a.eOpen,
+    evening_closing_time: a.eClose,
+    story: a.story,
+    history: a.history,
+    dress_code: a.dress,
+    speciality: a.special,
+    notes: a.notes,
+    thanthri: a.thanthri,
+    upi_id: a.upi,
+    start_date: a.start,
+    end_date: a.end,
+    event_time: a.time,
+    performers: a.performers,
+    rate: a.rate,
+    offerings: a.offerings,
+    opening_hours: a.hours,
+    gps: a.gps,
+  };
+}
+
 
 /* ================= LISTING HUB ================= */
 const hubCards: { kind: FlowKind | "listings"; title: string; sub: string; icon: typeof Landmark; cls: string }[] = [
@@ -162,13 +221,10 @@ export function ListingHub({ back, start, openListings, phone }: { back: () => v
 }
 
 /* ================= MY LISTINGS ================= */
-const myListings = [
-  { name: "Sri Kolathoorappan Temple", place: "Palakkad, Kerala", status: "verified" },
-  { name: "Sree Krishna Temple", place: "Mayanad, Calicut", status: "pending" },
-  { name: "Ramesh Pandit Ji · Priest", place: "Vaikom", status: "verified" },
-];
-
 export function MyListings({ back }: { back: () => void }) {
+  const q = useQuery({ queryKey: ["my-submissions"], queryFn: listingApi.mySubmissions, retry: false });
+  const listings = listOf<Submission>(q.data);
+
   return (
     <div className="flex-1 min-h-0 overflow-y-auto bg-cream">
       <header className="px-4 pt-3 pb-4 bg-card flex items-center gap-3 border-b border-border sticky top-0 z-10">
@@ -176,26 +232,43 @@ export function MyListings({ back }: { back: () => void }) {
         <div className="text-lg font-serif font-bold text-ink">My Listings</div>
       </header>
       <div className="p-4 space-y-3">
-        {myListings.map((l) => (
-          <div key={l.name} className="p-4 rounded-2xl bg-card ring-1 ring-border">
-            <div className="flex items-start gap-2">
-              <div className="flex-1">
-                <div className="font-semibold text-ink leading-tight">{l.name}</div>
-                <div className="text-xs text-ink-soft flex items-center gap-1 mt-0.5"><MapPin className="size-3" /> {l.place}</div>
-              </div>
-              <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${l.status === "verified" ? "bg-verified/15 text-verified" : "bg-gold/25 text-earth"}`}>{l.status}</span>
-            </div>
-            <div className="grid grid-cols-4 gap-2 mt-3">
-              {["Edit", "Poojas", "Events", "View"].map((a) => (
-                <button key={a} className="py-2 rounded-xl bg-muted text-xs font-semibold text-ink-soft">{a}</button>
-              ))}
-            </div>
+        {q.isLoading && (
+          <div className="py-10 flex flex-col items-center gap-2 text-ink-soft"><Loader2 className="size-5 animate-spin text-earth" /><span className="text-xs">Loading your listings…</span></div>
+        )}
+        {q.isError && (
+          <div className="p-4 rounded-2xl bg-card ring-1 ring-border text-center">
+            <div className="text-sm font-semibold text-ink">Listings unavailable</div>
+            <p className="text-xs text-ink-soft mt-1">{errorText(q.error)}</p>
+            <button onClick={() => q.refetch()} className="mt-3 h-10 px-4 rounded-full bg-earth text-primary-foreground text-xs font-bold">Try again</button>
           </div>
-        ))}
+        )}
+        {!q.isLoading && !q.isError && listings.length === 0 && (
+          <div className="py-12 flex flex-col items-center text-center gap-2">
+            <div className="size-14 rounded-2xl bg-muted grid place-items-center"><Inbox className="size-6 text-ink-soft" /></div>
+            <div className="font-semibold text-ink">No listings yet</div>
+            <p className="text-xs text-ink-soft max-w-[260px]">Listings you add will appear here with their verification status.</p>
+          </div>
+        )}
+        {listings.map((l, i) => {
+          const status = (l.status ?? "pending").toLowerCase();
+          const verified = status === "verified" || status === "approved";
+          return (
+            <div key={l.uuid ?? l.id ?? i} className="p-4 rounded-2xl bg-card ring-1 ring-border">
+              <div className="flex items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-ink leading-tight truncate">{l.title ?? l.name ?? "Untitled listing"}</div>
+                  <div className="text-xs text-ink-soft flex items-center gap-1 mt-0.5 truncate"><MapPin className="size-3 shrink-0" /> {l.location ?? l.city ?? "—"}</div>
+                </div>
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase shrink-0 ${verified ? "bg-verified/15 text-verified" : "bg-gold/25 text-earth"}`}>{status}</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
+
 
 /* ================= MEENAKSHI CHAT FLOW ================= */
 type Bubble = { id: number; from: "bot" | "me"; text?: string; kind?: "text" | "image" | "voice" | "file"; meta?: string };
@@ -230,14 +303,41 @@ export function MeenakshiFlow({ kind, phone, back, onSubmitted, prefill }: { kin
         ],
   );
   const [review, setReview] = useState(false);
-  const [done, setDone] = useState(false);
   const [lang, setLang] = useState<"EN" | "ML">("EN");
   const [editKey, setEditKey] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
+  const qc = useQueryClient();
+  const deitiesQ = useQuery({
+    queryKey: ["deities"], queryFn: catalogApi.deities,
+    enabled: steps.some((s) => s.source === "deities"),
+  });
+  const catsQ = useQuery({
+    queryKey: ["categories", meta.listingType], queryFn: () => catalogApi.categories(meta.listingType),
+    enabled: steps.some((s) => s.source === "categories"),
+  });
+
+  const submit = useMutation({
+    mutationFn: () => {
+      const payload = toPayload(kind, answers);
+      return prefill ? listingApi.update(payload) : listingApi.create(payload);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-submissions"] }),
+  });
+
+  const optsFor = (s: Step): string[] => {
+    if (s.source === "deities") return listOf<Deity>(deitiesQ.data).map((d) => d.name);
+    if (s.source === "categories") return listOf<{ name: string }>(catsQ.data).map((c) => c.name);
+    return s.opts ?? [];
+  };
+
   const step: Step | undefined = steps[idx];
   const editStep = editKey ? steps.find((s) => s.key === editKey) : undefined;
-  const active = editStep ?? step;
+  const activeBase = editStep ?? step;
+  const active: Step | undefined = activeBase
+    ? { ...activeBase, opts: optsFor(activeBase), type: activeBase.source && optsFor(activeBase).length === 0 ? "text" : activeBase.type }
+    : undefined;
+
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, review]);
 
@@ -275,7 +375,7 @@ export function MeenakshiFlow({ kind, phone, back, onSubmitted, prefill }: { kin
 
   const skip = () => answer("");
 
-  if (done) {
+  if (submit.isSuccess) {
     return (
       <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-4 p-8 bg-cream text-center">
         <div className="size-20 rounded-full bg-verified grid place-items-center"><Check className="size-10 text-primary-foreground" /></div>
@@ -313,9 +413,13 @@ export function MeenakshiFlow({ kind, phone, back, onSubmitted, prefill }: { kin
             </div>
           ))}
         </div>
-        <div className="p-3 bg-card border-t border-border">
-          <button onClick={() => setDone(true)} className="w-full py-4 rounded-2xl bg-verified text-primary-foreground text-lg font-bold shadow-soft">✅ Confirm & Submit</button>
+        <div className="p-3 bg-card border-t border-border space-y-2">
+          {submit.isError && <p className="text-xs text-destructive text-center">{errorText(submit.error)}</p>}
+          <button onClick={() => submit.mutate()} disabled={submit.isPending} className="w-full py-4 rounded-2xl bg-verified text-primary-foreground text-lg font-bold shadow-soft disabled:opacity-50 flex items-center justify-center gap-2">
+            {submit.isPending && <Loader2 className="size-5 animate-spin" />} ✅ Confirm & Submit
+          </button>
         </div>
+
       </div>
     );
   }
