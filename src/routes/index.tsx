@@ -320,7 +320,13 @@ function Onboarding({ onDone }: { onDone: () => void }) {
               </div>
               <p className="text-xs text-ink-soft mt-1.5">Asked only once. We'll never ask again on bookings.</p>
             </div>
+            {recaptchaConfigured && (
+              <div className="pt-1">
+                <RecaptchaCheckbox onChange={setCaptcha} resetKey={captchaReset} />
+              </div>
+            )}
           </div>
+
         ) : (
           <div className="w-full mt-8 text-left">
             <label className="block text-sm font-semibold text-ink mb-2">Enter OTP sent to +91 {phone}</label>
