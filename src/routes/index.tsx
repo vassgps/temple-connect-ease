@@ -16,6 +16,8 @@ import { SubmitScreen, type SubmitKind } from "@/components/quick-submit";
 import meenakshiImg from "@/assets/meenakshi.jpg";
 import { RecaptchaCheckbox } from "@/components/recaptcha-checkbox";
 import { NotificationsInbox, NotificationThreadView, useUnreadCount } from "@/components/notifications";
+import { TempleSearchBar } from "@/components/temple-search";
+
 import {
   authApi, bookingApi, discoverApi, listingApi, listOf, countOf, money, placeOf, errorText,
   tokens, recaptchaConfigured, primeRecaptcha,
@@ -595,18 +597,19 @@ function ExploreTemples({ open, openEvents }: { open: (slug: string) => void; op
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("near");
 
-  useEffect(() => {
-    const t = setTimeout(() => setSearch(q.trim()), 400);
-    return () => clearTimeout(t);
-  }, [q]);
-
   const params = useMemo(() => {
+    // A live search always stays inside temple listings — festivals never mix in.
+    if (search) {
+      if (filter === "verified") return { listing_type: "temples" as const, select: "verified_temple" as const };
+      if (filter === "pooja") return { listing_type: "temples" as const, select: "pooja_booking" as const };
+      return { listing_type: "temples" as const };
+    }
     if (filter === "verified") return { listing_type: "temples" as const, select: "verified_temple" as const };
     if (filter === "pooja") return { listing_type: "temples" as const, select: "pooja_booking" as const };
     if (filter === "festivals") return { listing_type: "festivals" as const };
     if (filter === "services") return { listing_type: "services" as const };
     return { listing_type: "temples" as const };
-  }, [filter]);
+  }, [filter, search]);
 
   const listQ = useQuery({
     queryKey: ["discover", params, search],
@@ -631,9 +634,8 @@ function ExploreTemples({ open, openEvents }: { open: (slug: string) => void; op
     <div className="flex-1 flex flex-col min-h-0">
       <header className="px-5 pt-3 pb-4 bg-card">
         <BrandRow />
-        <div className="mt-4 relative">
-          <Search className="size-5 text-ink-soft absolute left-4 top-1/2 -translate-y-1/2" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search temples, poojas, festivals…" className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-muted text-[15px] outline-none placeholder:text-ink-soft" />
+        <div className="mt-4">
+          <TempleSearchBar value={q} onChange={setQ} onSearch={(query) => setSearch(query)} />
         </div>
         <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar">
           <Chip active={filter === "near"} onClick={() => setFilter("near")}>All Temples</Chip>
@@ -643,6 +645,7 @@ function ExploreTemples({ open, openEvents }: { open: (slug: string) => void; op
           <Chip active={filter === "services"} onClick={() => setFilter("services")}>Services</Chip>
         </div>
       </header>
+
 
       <div className="flex-1 overflow-y-auto pb-6">
         {/* Upcoming events */}
@@ -699,10 +702,20 @@ function ExploreTemples({ open, openEvents }: { open: (slug: string) => void; op
           </div>
 
           {listQ.isLoading && <Loading label="Loading listings…" />}
-          {listQ.isError && <ErrorState error={listQ.error} retry={() => listQ.refetch()} />}
-          {!listQ.isLoading && !listQ.isError && items.length === 0 && (
-            <EmptyState icon={Compass} title="Nothing found" sub={search ? "Try a different name, place or deity." : "No listings published in this category yet."} />
+          {listQ.isError && (
+            <ErrorState
+              error={new Error("Unable to search right now. Please try again.")}
+              retry={() => listQ.refetch()}
+            />
           )}
+          {!listQ.isLoading && !listQ.isError && items.length === 0 && (
+            <EmptyState
+              icon={Compass}
+              title={search ? "No temple or listing found for this search." : "Nothing found"}
+              sub={search ? "Try a different name, place or code." : "No listings published in this category yet."}
+            />
+          )}
+
 
           <div className="space-y-4">
             {items.map((t) => (
