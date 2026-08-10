@@ -16,7 +16,7 @@ import { SubmitScreen, type SubmitKind } from "@/components/quick-submit";
 import meenakshiImg from "@/assets/meenakshi.jpg";
 import {
   authApi, bookingApi, discoverApi, listingApi, listOf, countOf, money, placeOf, errorText,
-  tokens, recaptchaConfigured,
+  tokens, recaptchaConfigured, primeRecaptcha,
   type Listing, type Pooja, type Me, type Notification, type Booking,
 } from "@/lib/api";
 
