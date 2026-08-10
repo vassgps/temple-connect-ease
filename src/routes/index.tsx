@@ -258,6 +258,9 @@ function Onboarding({ onDone }: { onDone: () => void }) {
 
   const identifier = `91${phone}`;
 
+  // Warm up the reCAPTCHA script as soon as the screen mounts.
+  useEffect(() => { primeRecaptcha(); }, []);
+
   const sendOtp = useMutation({
     mutationFn: async () => {
       setErr(null);
@@ -271,10 +274,11 @@ function Onboarding({ onDone }: { onDone: () => void }) {
     onSuccess: (res) => {
       if (res?.recaptcha_required) {
         setErr(recaptchaConfigured
-          ? "reCAPTCHA verification failed. Please try again."
+          ? `reCAPTCHA could not verify this request. Make sure the site key is a v3 key and that ${typeof window !== "undefined" ? window.location.hostname : "this domain"} is added in the reCAPTCHA admin console.`
           : "reCAPTCHA is required by the server. Add VITE_RECAPTCHA_SITE_KEY to enable OTP login.");
         return;
       }
+
       setNote(`OTP sent to +91 ${phone}`);
       setStep(2);
     },
