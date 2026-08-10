@@ -14,6 +14,7 @@ import logoFullAsset from "@/assets/logo-full.png.asset.json";
 import { ListingHub, MyListings, MeenakshiFlow, type FlowKind } from "@/components/listing-flow";
 import { SubmitScreen, type SubmitKind } from "@/components/quick-submit";
 import meenakshiImg from "@/assets/meenakshi.jpg";
+import { RecaptchaCheckbox } from "@/components/recaptcha-checkbox";
 import {
   authApi, bookingApi, discoverApi, listingApi, listOf, countOf, money, placeOf, errorText,
   tokens, recaptchaConfigured, primeRecaptcha,
