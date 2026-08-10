@@ -221,13 +221,10 @@ export function ListingHub({ back, start, openListings, phone }: { back: () => v
 }
 
 /* ================= MY LISTINGS ================= */
-const myListings = [
-  { name: "Sri Kolathoorappan Temple", place: "Palakkad, Kerala", status: "verified" },
-  { name: "Sree Krishna Temple", place: "Mayanad, Calicut", status: "pending" },
-  { name: "Ramesh Pandit Ji · Priest", place: "Vaikom", status: "verified" },
-];
-
 export function MyListings({ back }: { back: () => void }) {
+  const q = useQuery({ queryKey: ["my-submissions"], queryFn: listingApi.mySubmissions, retry: false });
+  const listings = listOf<Submission>(q.data);
+
   return (
     <div className="flex-1 min-h-0 overflow-y-auto bg-cream">
       <header className="px-4 pt-3 pb-4 bg-card flex items-center gap-3 border-b border-border sticky top-0 z-10">
@@ -235,26 +232,43 @@ export function MyListings({ back }: { back: () => void }) {
         <div className="text-lg font-serif font-bold text-ink">My Listings</div>
       </header>
       <div className="p-4 space-y-3">
-        {myListings.map((l) => (
-          <div key={l.name} className="p-4 rounded-2xl bg-card ring-1 ring-border">
-            <div className="flex items-start gap-2">
-              <div className="flex-1">
-                <div className="font-semibold text-ink leading-tight">{l.name}</div>
-                <div className="text-xs text-ink-soft flex items-center gap-1 mt-0.5"><MapPin className="size-3" /> {l.place}</div>
-              </div>
-              <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${l.status === "verified" ? "bg-verified/15 text-verified" : "bg-gold/25 text-earth"}`}>{l.status}</span>
-            </div>
-            <div className="grid grid-cols-4 gap-2 mt-3">
-              {["Edit", "Poojas", "Events", "View"].map((a) => (
-                <button key={a} className="py-2 rounded-xl bg-muted text-xs font-semibold text-ink-soft">{a}</button>
-              ))}
-            </div>
+        {q.isLoading && (
+          <div className="py-10 flex flex-col items-center gap-2 text-ink-soft"><Loader2 className="size-5 animate-spin text-earth" /><span className="text-xs">Loading your listings…</span></div>
+        )}
+        {q.isError && (
+          <div className="p-4 rounded-2xl bg-card ring-1 ring-border text-center">
+            <div className="text-sm font-semibold text-ink">Listings unavailable</div>
+            <p className="text-xs text-ink-soft mt-1">{errorText(q.error)}</p>
+            <button onClick={() => q.refetch()} className="mt-3 h-10 px-4 rounded-full bg-earth text-primary-foreground text-xs font-bold">Try again</button>
           </div>
-        ))}
+        )}
+        {!q.isLoading && !q.isError && listings.length === 0 && (
+          <div className="py-12 flex flex-col items-center text-center gap-2">
+            <div className="size-14 rounded-2xl bg-muted grid place-items-center"><Inbox className="size-6 text-ink-soft" /></div>
+            <div className="font-semibold text-ink">No listings yet</div>
+            <p className="text-xs text-ink-soft max-w-[260px]">Listings you add will appear here with their verification status.</p>
+          </div>
+        )}
+        {listings.map((l, i) => {
+          const status = (l.status ?? "pending").toLowerCase();
+          const verified = status === "verified" || status === "approved";
+          return (
+            <div key={l.uuid ?? l.id ?? i} className="p-4 rounded-2xl bg-card ring-1 ring-border">
+              <div className="flex items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-ink leading-tight truncate">{l.title ?? l.name ?? "Untitled listing"}</div>
+                  <div className="text-xs text-ink-soft flex items-center gap-1 mt-0.5 truncate"><MapPin className="size-3 shrink-0" /> {l.location ?? l.city ?? "—"}</div>
+                </div>
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase shrink-0 ${verified ? "bg-verified/15 text-verified" : "bg-gold/25 text-earth"}`}>{status}</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
+
 
 /* ================= MEENAKSHI CHAT FLOW ================= */
 type Bubble = { id: number; from: "bot" | "me"; text?: string; kind?: "text" | "image" | "voice" | "file"; meta?: string };
