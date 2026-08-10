@@ -62,31 +62,71 @@ declare global {
   }
 }
 
-let recaptchaLoader: Promise<void> | null = null;
+let recaptchaLoader: Promise<boolean> | null = null;
 
-function loadRecaptcha(siteKey: string) {
+/** Loads Google's v3 script once. Resolves false instead of throwing so the UI never hard-fails. */
+function loadRecaptcha(siteKey: string): Promise<boolean> {
   if (recaptchaLoader) return recaptchaLoader;
-  recaptchaLoader = new Promise<void>((resolve, reject) => {
-    const s = document.createElement("script");
+  recaptchaLoader = new Promise<boolean>((resolve) => {
+    if (window.grecaptcha) return resolve(true);
+    const existing = document.querySelector<HTMLScriptElement>('script[data-recaptcha="1"]');
+    const s = existing ?? document.createElement("script");
+    s.dataset.recaptcha = "1";
     s.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
     s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error("Could not load reCAPTCHA"));
-    document.head.appendChild(s);
+    const timer = window.setTimeout(() => {
+      console.warn("[recaptcha] script load timed out (network blocked or ad-blocker?)");
+      resolve(Boolean(window.grecaptcha));
+    }, 8000);
+    s.onload = () => {
+      window.clearTimeout(timer);
+      if (!window.grecaptcha) console.warn("[recaptcha] script loaded but window.grecaptcha is missing");
+      resolve(Boolean(window.grecaptcha));
+    };
+    s.onerror = () => {
+      window.clearTimeout(timer);
+      console.error("[recaptcha] failed to load https://www.google.com/recaptcha/api.js");
+      resolve(false);
+    };
+    if (!existing) document.head.appendChild(s);
   });
   return recaptchaLoader;
 }
 
 export const recaptchaConfigured = Boolean(RECAPTCHA_SITE_KEY);
+export const recaptchaSiteKey = RECAPTCHA_SITE_KEY;
 
-export async function getRecaptchaToken(action: string): Promise<string | undefined> {
-  if (!RECAPTCHA_SITE_KEY || typeof window === "undefined") return undefined;
-  await loadRecaptcha(RECAPTCHA_SITE_KEY);
-  const g = window.grecaptcha;
-  if (!g) return undefined;
-  await new Promise<void>((r) => g.ready(() => r()));
-  return g.execute(RECAPTCHA_SITE_KEY, { action });
+/** Warm up the script so the widget/badge is ready before the user submits. */
+export function primeRecaptcha() {
+  if (!RECAPTCHA_SITE_KEY || typeof window === "undefined") return;
+  void loadRecaptcha(RECAPTCHA_SITE_KEY);
 }
+
+/** Returns a v3 token, or undefined when reCAPTCHA is unavailable (never throws). */
+export async function getRecaptchaToken(action: string): Promise<string | undefined> {
+  if (typeof window === "undefined") return undefined;
+  if (!RECAPTCHA_SITE_KEY) {
+    console.warn("[recaptcha] missing site key — set VITE_RECAPTCHA_SITE_KEY");
+    return undefined;
+  }
+  const ok = await loadRecaptcha(RECAPTCHA_SITE_KEY);
+  const g = window.grecaptcha;
+  if (!ok || !g) return undefined;
+  try {
+    await new Promise<void>((r) => g.ready(() => r()));
+    const token = await g.execute(RECAPTCHA_SITE_KEY, { action });
+    if (!token) console.warn("[recaptcha] execute returned an empty token");
+    return token || undefined;
+  } catch (e) {
+    console.error(
+      "[recaptcha] execute failed — check the site key is a v3 key and that this domain is authorised in the reCAPTCHA admin console:",
+      window.location.hostname,
+      e,
+    );
+    return undefined;
+  }
+}
+
 
 /* ---------------- core request ---------------- */
 type Req = {
