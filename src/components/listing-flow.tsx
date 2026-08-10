@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, ArrowRight, Camera, Check, CheckCheck, ChevronDown,
   Image as ImageIcon, Landmark, MapPin, Mic, MoreVertical, Send, Sparkles,
   CalendarDays, Store, ListChecks, Play, Edit3, ShieldCheck, FileText, X,
+  Loader2, Inbox,
 } from "lucide-react";
 import meenakshi from "@/assets/meenakshi.jpg";
 import logoMarkAsset from "@/assets/logo-mark.png.asset.json";
+import {
+  catalogApi, listingApi, listOf, errorText,
+  type Deity, type ListingType, type Submission,
+} from "@/lib/api";
 
 const logoMark = logoMarkAsset.url;
 
-/* ================= STEP DEFINITIONS (37 steps) ================= */
+/* ================= STEP DEFINITIONS ================= */
 type StepType = "text" | "long" | "choice" | "multi" | "media" | "gps" | "time";
 type Step = {
   key: string;
@@ -17,15 +23,17 @@ type Step = {
   q: string;
   type: StepType;
   opts?: string[];
+  /** master-data source fetched from the backend */
+  source?: "deities" | "categories";
   optional?: boolean;
   hint?: string;
   multiFiles?: boolean;
 };
 
 const templeSteps: Step[] = [
-  { key: "name", section: "Basic Details", q: "What is the temple's name? 🛕", type: "text", hint: "e.g. Sree Krishna Temple" },
+  { key: "name", section: "Basic Details", q: "What is the temple's name? 🛕", type: "text", hint: "Temple name" },
   { key: "subtitle", section: "Basic Details", q: "Any subtitle or short tagline?", type: "text", optional: true },
-  { key: "category", section: "Basic Details", q: "Which category does it belong to?", type: "choice", opts: ["HINDU TEMPLES", "KAVU", "JAIN TEMPLES", "BUDDHIST PAGODA", "GURUDWARA", "CHURCH", "MOSQUE"] },
+  { key: "category", section: "Basic Details", q: "Which category does it belong to?", type: "choice", source: "categories" },
   { key: "about", section: "About the Temple", q: "Tell me a little about the temple. You can type or send a voice note 🎤", type: "long" },
   { key: "mainPhoto", section: "Photos & Media", q: "Please share the main photo of the temple.", type: "media" },
   { key: "gallery", section: "Photos & Media", q: "Any more photos for the gallery?", type: "media", multiFiles: true, optional: true },
@@ -44,8 +52,8 @@ const templeSteps: Step[] = [
   { key: "designation", section: "People in Charge", q: "Their designation?", type: "choice", opts: ["Trustee", "Secretary", "President", "Manager", "Melsanthi / Priest"] },
   { key: "personPhone", section: "People in Charge", q: "Their contact number?", type: "text" },
   { key: "management", section: "Religious Info", q: "Type of management?", type: "choice", opts: ["Trust", "Devaswom Board", "Family / Private", "Community Committee", "Government"] },
-  { key: "mainDeity", section: "Religious Info", q: "Who is the main deity?", type: "choice", opts: ["LORD GANESH", "LORD KRISHNA", "LORD SHIVA", "LORD AYYAPPA", "LORD BHAGAVATHY", "LORD VISHNU", "KIRATHAMOORTHY"] },
-  { key: "otherDeities", section: "Religious Info", q: "Any other deities worshipped here?", type: "multi", opts: ["KIRATHAMOORTHY", "LORD AYYAPPA", "LORD BHAGAVATHY", "LORD GANESH", "LORD KRISHNA", "NAGA DEVATHA", "LORD SHIVA"], optional: true },
+  { key: "mainDeity", section: "Religious Info", q: "Who is the main deity?", type: "choice", source: "deities" },
+  { key: "otherDeities", section: "Religious Info", q: "Any other deities worshipped here?", type: "multi", source: "deities", optional: true },
   { key: "mOpen", section: "Timings", q: "Morning opening time?", type: "time" },
   { key: "mClose", section: "Timings", q: "Morning closing time?", type: "time" },
   { key: "eOpen", section: "Timings", q: "Evening opening time?", type: "time" },
@@ -61,6 +69,7 @@ const templeSteps: Step[] = [
   { key: "events", section: "Events", q: "Main events — share short notes.", type: "long", optional: true },
   { key: "eventMedia", section: "Events", q: "Attach photos or files about events?", type: "media", multiFiles: true, optional: true },
 ];
+
 
 export type FlowKind = "temple" | "service" | "event" | "business";
 
