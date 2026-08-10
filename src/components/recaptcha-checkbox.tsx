@@ -34,7 +34,7 @@ export function RecaptchaCheckbox({
       }
       try {
         widgetRef.current = g.render(hostRef.current, {
-          sitekey: recaptchaSiteKey,
+          sitekey: recaptchaSiteKey as string,
           callback: (token: string) => cbRef.current(token),
           "expired-callback": () => cbRef.current(null),
           "error-callback": () => cbRef.current(null),

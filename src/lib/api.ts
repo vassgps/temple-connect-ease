@@ -341,22 +341,22 @@ export type Submission = {
 
 /* ================= endpoints ================= */
 export const authApi = {
-  register: async (input: { name: string; mobile_number: string; country_code?: string }) => {
-    const recaptcha_token = await getRecaptchaToken("register");
-    return api.post(
+  register: async (
+    input: { name: string; mobile_number: string; country_code?: string },
+    recaptcha_token?: string,
+  ) =>
+    api.post(
       "/api/v1/users/register/",
       { country_code: "+91", ...input, ...(recaptcha_token ? { recaptcha_token } : {}) },
       false,
-    ) as Promise<{ otp_required?: boolean; recaptcha_required?: boolean; identifier?: string }>;
-  },
-  login: async (identifier: string) => {
-    const recaptcha_token = await getRecaptchaToken("login");
-    return api.post(
+    ) as Promise<{ otp_required?: boolean; recaptcha_required?: boolean; identifier?: string }>,
+  login: async (identifier: string, recaptcha_token?: string) =>
+    api.post(
       "/api/v1/users/login/",
       { identifier, ...(recaptcha_token ? { recaptcha_token } : {}) },
       false,
-    ) as Promise<{ otp_sent?: boolean; recaptcha_required?: boolean; password_required?: boolean }>;
-  },
+    ) as Promise<{ otp_sent?: boolean; recaptcha_required?: boolean; password_required?: boolean }>,
+
   verifyOtp: async (identifier: string, otp: string) => {
     const data = (await api.post("/api/v1/users/login/verify-otp/", { identifier, otp }, false)) as {
       access?: string;
