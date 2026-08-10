@@ -15,6 +15,7 @@ import { ListingHub, MyListings, MeenakshiFlow, type FlowKind } from "@/componen
 import { SubmitScreen, type SubmitKind } from "@/components/quick-submit";
 import meenakshiImg from "@/assets/meenakshi.jpg";
 import { RecaptchaCheckbox } from "@/components/recaptcha-checkbox";
+import { NotificationsInbox, NotificationThreadView, useUnreadCount } from "@/components/notifications";
 import {
   authApi, bookingApi, discoverApi, listingApi, listOf, countOf, money, placeOf, errorText,
   tokens, recaptchaConfigured, primeRecaptcha,
@@ -36,12 +37,13 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Tab = "chats" | "explore" | "bookings" | "submit" | "profile";
+type Tab = "inbox" | "explore" | "bookings" | "submit" | "profile";
 type BookDraft = { slug: string; title: string; poojas: Pooja[]; devotee: string; phone: string; nakshatra: string; date: string; donation: string; code?: string };
 
 type View =
   | { name: "tab" }
   | { name: "ai-chat" }
+  | { name: "notif-thread"; id: string; title: string }
   | { name: "temple"; slug: string }
   | { name: "book-select"; slug: string }
   | { name: "book-details" }
@@ -71,7 +73,7 @@ function App() {
     retry: false,
   });
 
-  const [tab, setTab] = useState<Tab>("chats");
+  const [tab, setTab] = useState<Tab>("inbox");
   const [view, setView] = useState<View>({ name: "tab" });
   const [draft, setDraft] = useState<BookDraft | null>(null);
 
@@ -83,7 +85,7 @@ function App() {
     setHasToken(false);
     qc.clear();
     setView({ name: "tab" });
-    setTab("chats");
+    setTab("inbox");
   };
 
   return (
@@ -107,6 +109,9 @@ function App() {
                 <TabView tab={tab} setTab={setTab} setView={setView} profile={profile!} onSignOut={signOut} />
               )}
               {view.name === "ai-chat" && <AIChat back={() => setView({ name: "tab" })} />}
+              {view.name === "notif-thread" && (
+                <NotificationThreadView id={view.id} name={view.title} back={() => setView({ name: "tab" })} />
+              )}
               {view.name === "temple" && (
                 <TempleDetail
                   slug={view.slug}
@@ -371,11 +376,10 @@ function Onboarding({ onDone }: { onDone: () => void }) {
 
 /* ================= NAV ================= */
 function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
-  const notifQ = useQuery({ queryKey: ["notifications"], queryFn: authApi.notifications, retry: false });
-  const unread = listOf<Notification>(notifQ.data).filter((n) => n.is_read === false).length;
+  const unread = useUnreadCount();
 
   const items: { id: Tab; label: string; icon: typeof MessageCircle; badge?: number }[] = [
-    { id: "chats", label: "Chats", icon: MessageCircle, badge: unread || undefined },
+    { id: "inbox", label: "Updates", icon: Bell, badge: unread || undefined },
     { id: "explore", label: "Explore", icon: Compass },
     { id: "bookings", label: "Bookings", icon: CalendarCheck },
     { id: "submit", label: "Submit", icon: FilePlus2 },
@@ -405,7 +409,12 @@ function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
 function TabView({ tab, setView, setTab, profile, onSignOut }: {
   tab: Tab; setView: (v: View) => void; setTab: (t: Tab) => void; profile: Me; onSignOut: () => void;
 }) {
-  if (tab === "chats") return <ChatsList openAI={() => setView({ name: "ai-chat" })} />;
+  if (tab === "inbox") return (
+    <InboxScreen
+      openAI={() => setView({ name: "ai-chat" })}
+      openThread={(id, title) => setView({ name: "notif-thread", id, title })}
+    />
+  );
   if (tab === "explore") return <ExploreTemples open={(slug) => setView({ name: "temple", slug })} openEvents={() => setView({ name: "events" })} />;
   if (tab === "bookings") return <BookingsList goExplore={() => setTab("explore")} openReceipt={(code) => setView({ name: "book-receipt", code })} />;
   if (tab === "submit") return (
