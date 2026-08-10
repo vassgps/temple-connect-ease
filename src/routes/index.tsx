@@ -1295,7 +1295,7 @@ function ProfileScreen({ profile, openRefer, openHub, openListings, onSignOut, g
           <div className="size-12 rounded-xl bg-earth-soft grid place-items-center"><Sparkles className="size-6 text-earth" /></div>
           <div className="flex-1">
             <div className="font-semibold text-ink">Add Full Listing Details</div>
-            <div className="text-xs text-ink-soft">Guided step-by-step listing helper</div>
+            <div className="text-xs text-ink-soft">Step-by-step form, 4 short steps</div>
           </div>
           <ChevronRight className="size-5 text-earth" />
         </button>
