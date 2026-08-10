@@ -16,6 +16,8 @@ import { SubmitScreen, type SubmitKind } from "@/components/quick-submit";
 import meenakshiImg from "@/assets/meenakshi.jpg";
 import { RecaptchaCheckbox } from "@/components/recaptcha-checkbox";
 import { NotificationsInbox, NotificationThreadView, useUnreadCount } from "@/components/notifications";
+import { TempleSearchBar } from "@/components/temple-search";
+
 import {
   authApi, bookingApi, discoverApi, listingApi, listOf, countOf, money, placeOf, errorText,
   tokens, recaptchaConfigured, primeRecaptcha,
