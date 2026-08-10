@@ -702,10 +702,20 @@ function ExploreTemples({ open, openEvents }: { open: (slug: string) => void; op
           </div>
 
           {listQ.isLoading && <Loading label="Loading listings…" />}
-          {listQ.isError && <ErrorState error={listQ.error} retry={() => listQ.refetch()} />}
-          {!listQ.isLoading && !listQ.isError && items.length === 0 && (
-            <EmptyState icon={Compass} title="Nothing found" sub={search ? "Try a different name, place or deity." : "No listings published in this category yet."} />
+          {listQ.isError && (
+            <ErrorState
+              error={new Error("Unable to search right now. Please try again.")}
+              retry={() => listQ.refetch()}
+            />
           )}
+          {!listQ.isLoading && !listQ.isError && items.length === 0 && (
+            <EmptyState
+              icon={Compass}
+              title={search ? "No temple or listing found for this search." : "Nothing found"}
+              sub={search ? "Try a different name, place or code." : "No listings published in this category yet."}
+            />
+          )}
+
 
           <div className="space-y-4">
             {items.map((t) => (
