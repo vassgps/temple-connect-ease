@@ -219,8 +219,8 @@ export const api = {
 
 export function listOf<T>(data: unknown): T[] {
   if (Array.isArray(data)) return data as T[];
-  const d = data as { results?: T[] } | null;
-  return d?.results ?? [];
+  const d = data as { results?: T[]; threads?: T[]; items?: T[] } | null;
+  return d?.results ?? d?.threads ?? d?.items ?? [];
 }
 
 export function countOf(data: unknown): number {
@@ -320,12 +320,17 @@ export type NotificationThread = {
   name?: string;
   temple_name?: string;
   listing_title?: string;
+  subtitle?: string | null;
+  type?: string;
+  listing_uuid?: string;
   image?: string | null;
   temple_image?: string | null;
   avatar?: string | null;
+  avatar_url?: string | null;
   latest_message?: string | null;
   last_message?: string | null;
   latest_notification?: string | { message?: string; body?: string; title?: string; created_at?: string } | null;
+  latest_at?: string | null;
   latest_time?: string | null;
   last_message_at?: string | null;
   updated_at?: string | null;
@@ -405,8 +410,9 @@ export const authApi = {
   notifications: () => api.get("/api/v1/users/notifications/"),
   notificationThreads: () => api.get("/api/v1/users/notification-threads/"),
   notificationThread: (id: string) =>
-    api.get(`/api/v1/users/notification-threads/${id}/`) as Promise<NotificationThreadDetail>,
-  markThreadRead: (id: string) => api.post(`/api/v1/users/notification-threads/${id}/read/`, {}),
+    api.get(`/api/v1/users/notification-threads/${encodeURIComponent(id)}/`) as Promise<NotificationThreadDetail>,
+  markThreadRead: (id: string) =>
+    api.post(`/api/v1/users/notification-threads/${encodeURIComponent(id)}/read/`, {}),
 
   logout: () => tokens.clear(),
 };
