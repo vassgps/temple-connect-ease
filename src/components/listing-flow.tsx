@@ -303,14 +303,41 @@ export function MeenakshiFlow({ kind, phone, back, onSubmitted, prefill }: { kin
         ],
   );
   const [review, setReview] = useState(false);
-  const [done, setDone] = useState(false);
   const [lang, setLang] = useState<"EN" | "ML">("EN");
   const [editKey, setEditKey] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
+  const qc = useQueryClient();
+  const deitiesQ = useQuery({
+    queryKey: ["deities"], queryFn: catalogApi.deities,
+    enabled: steps.some((s) => s.source === "deities"),
+  });
+  const catsQ = useQuery({
+    queryKey: ["categories", meta.listingType], queryFn: () => catalogApi.categories(meta.listingType),
+    enabled: steps.some((s) => s.source === "categories"),
+  });
+
+  const submit = useMutation({
+    mutationFn: () => {
+      const payload = toPayload(kind, answers);
+      return prefill ? listingApi.update(payload) : listingApi.create(payload);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-submissions"] }),
+  });
+
+  const optsFor = (s: Step): string[] => {
+    if (s.source === "deities") return listOf<Deity>(deitiesQ.data).map((d) => d.name);
+    if (s.source === "categories") return listOf<{ name: string }>(catsQ.data).map((c) => c.name);
+    return s.opts ?? [];
+  };
+
   const step: Step | undefined = steps[idx];
   const editStep = editKey ? steps.find((s) => s.key === editKey) : undefined;
-  const active = editStep ?? step;
+  const activeBase = editStep ?? step;
+  const active: Step | undefined = activeBase
+    ? { ...activeBase, opts: optsFor(activeBase), type: activeBase.source && optsFor(activeBase).length === 0 ? "text" : activeBase.type }
+    : undefined;
+
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, review]);
 
