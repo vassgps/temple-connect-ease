@@ -11,20 +11,20 @@ export function threadId(t: NotificationThread): string {
   return String(t.thread_id ?? t.id ?? t.uuid ?? "");
 }
 function threadName(t: NotificationThread): string {
-  return t.temple_name ?? t.listing_title ?? t.title ?? t.name ?? "TempleAddress";
+  return t.title ?? t.temple_name ?? t.listing_title ?? t.name ?? "TempleAddress";
 }
 function threadImage(t: NotificationThread): string | null {
-  return t.temple_image ?? t.image ?? t.avatar ?? null;
+  return t.avatar_url ?? t.temple_image ?? t.image ?? t.avatar ?? null;
 }
 function threadText(t: NotificationThread): string {
   const latest = t.latest_notification;
   if (latest && typeof latest === "object") return latest.message ?? latest.body ?? latest.title ?? "";
-  return (latest as string | null) ?? t.latest_message ?? t.last_message ?? "";
+  return t.latest_message ?? (latest as string | null) ?? t.last_message ?? t.subtitle ?? "";
 }
 function threadTime(t: NotificationThread): string {
   const latest = t.latest_notification;
   const fromLatest = latest && typeof latest === "object" ? latest.created_at : undefined;
-  return t.latest_time ?? fromLatest ?? t.last_message_at ?? t.updated_at ?? t.created_at ?? "";
+  return t.latest_at ?? t.latest_time ?? fromLatest ?? t.last_message_at ?? t.updated_at ?? t.created_at ?? "";
 }
 function threadUnread(t: NotificationThread): number {
   return Number(t.unread_count ?? t.unread ?? 0) || 0;
