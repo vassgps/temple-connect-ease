@@ -403,6 +403,11 @@ export const authApi = {
   wallet: () => api.get("/api/v1/users/wallet/") as Promise<Record<string, unknown>>,
   walletTransactions: () => api.get("/api/v1/users/wallet/transactions/"),
   notifications: () => api.get("/api/v1/users/notifications/"),
+  notificationThreads: () => api.get("/api/v1/users/notification-threads/"),
+  notificationThread: (id: string) =>
+    api.get(`/api/v1/users/notification-threads/${id}/`) as Promise<NotificationThreadDetail>,
+  markThreadRead: (id: string) => api.post(`/api/v1/users/notification-threads/${id}/read/`, {}),
+
   logout: () => tokens.clear(),
 };
 
