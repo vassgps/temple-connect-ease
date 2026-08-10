@@ -14,6 +14,7 @@ import logoFullAsset from "@/assets/logo-full.png.asset.json";
 import { ListingHub, MyListings, MeenakshiFlow, type FlowKind } from "@/components/listing-flow";
 import { SubmitScreen, type SubmitKind } from "@/components/quick-submit";
 import meenakshiImg from "@/assets/meenakshi.jpg";
+import { RecaptchaCheckbox } from "@/components/recaptcha-checkbox";
 import {
   authApi, bookingApi, discoverApi, listingApi, listOf, countOf, money, placeOf, errorText,
   tokens, recaptchaConfigured, primeRecaptcha,
@@ -255,6 +256,8 @@ function Onboarding({ onDone }: { onDone: () => void }) {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [err, setErr] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const [captchaReset, setCaptchaReset] = useState(0);
 
   const identifier = `91${phone}`;
 
@@ -264,17 +267,19 @@ function Onboarding({ onDone }: { onDone: () => void }) {
   const sendOtp = useMutation({
     mutationFn: async () => {
       setErr(null);
+      const token = captcha ?? undefined;
       try {
-        await authApi.register({ name, mobile_number: phone, country_code: "+91" });
+        await authApi.register({ name, mobile_number: phone, country_code: "+91" }, token);
       } catch {
         /* existing user — continue to login */
       }
-      return authApi.login(identifier);
+      return authApi.login(identifier, token);
     },
     onSuccess: (res) => {
       if (res?.recaptcha_required) {
+        setCaptchaReset((n) => n + 1);
         setErr(recaptchaConfigured
-          ? `reCAPTCHA could not verify this request. Make sure the site key is a v3 key and that ${typeof window !== "undefined" ? window.location.hostname : "this domain"} is added in the reCAPTCHA admin console.`
+          ? "Please tick the “I'm not a robot” box and try again."
           : "reCAPTCHA is required by the server. Add VITE_RECAPTCHA_SITE_KEY to enable OTP login.");
         return;
       }
@@ -282,8 +287,9 @@ function Onboarding({ onDone }: { onDone: () => void }) {
       setNote(`OTP sent to +91 ${phone}`);
       setStep(2);
     },
-    onError: (e) => setErr(errorText(e)),
+    onError: (e) => { setCaptchaReset((n) => n + 1); setErr(errorText(e)); },
   });
+
 
   const verify = useMutation({
     mutationFn: () => authApi.verifyOtp(identifier, otp.join("")),
@@ -315,7 +321,13 @@ function Onboarding({ onDone }: { onDone: () => void }) {
               </div>
               <p className="text-xs text-ink-soft mt-1.5">Asked only once. We'll never ask again on bookings.</p>
             </div>
+            {recaptchaConfigured && (
+              <div className="pt-1">
+                <RecaptchaCheckbox onChange={setCaptcha} resetKey={captchaReset} />
+              </div>
+            )}
           </div>
+
         ) : (
           <div className="w-full mt-8 text-left">
             <label className="block text-sm font-semibold text-ink mb-2">Enter OTP sent to +91 {phone}</label>

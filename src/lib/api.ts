@@ -52,36 +52,50 @@ export const tokens = {
   },
 };
 
-/* ---------------- reCAPTCHA (v3) ---------------- */
+/* ---------------- reCAPTCHA (v2 checkbox) ---------------- */
 declare global {
   interface Window {
     grecaptcha?: {
       ready: (cb: () => void) => void;
-      execute: (siteKey: string, opts: { action: string }) => Promise<string>;
+      render: (
+        container: HTMLElement | string,
+        params: {
+          sitekey: string;
+          callback?: (token: string) => void;
+          "expired-callback"?: () => void;
+          "error-callback"?: () => void;
+          theme?: "light" | "dark";
+          size?: "normal" | "compact";
+        },
+      ) => number;
+      reset: (widgetId?: number) => void;
+      getResponse: (widgetId?: number) => string;
     };
   }
 }
 
 let recaptchaLoader: Promise<boolean> | null = null;
 
-/** Loads Google's v3 script once. Resolves false instead of throwing so the UI never hard-fails. */
-function loadRecaptcha(siteKey: string): Promise<boolean> {
+/** Loads Google's v2 script once. Resolves false instead of throwing so the UI never hard-fails. */
+export function loadRecaptcha(siteKey = RECAPTCHA_SITE_KEY): Promise<boolean> {
+  if (typeof window === "undefined" || !siteKey) return Promise.resolve(false);
   if (recaptchaLoader) return recaptchaLoader;
   recaptchaLoader = new Promise<boolean>((resolve) => {
-    if (window.grecaptcha) return resolve(true);
+    if (window.grecaptcha?.render) return resolve(true);
     const existing = document.querySelector<HTMLScriptElement>('script[data-recaptcha="1"]');
     const s = existing ?? document.createElement("script");
     s.dataset.recaptcha = "1";
-    s.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
+    s.src = "https://www.google.com/recaptcha/api.js?render=explicit";
     s.async = true;
+    s.defer = true;
+    const done = () => resolve(Boolean(window.grecaptcha?.render));
     const timer = window.setTimeout(() => {
       console.warn("[recaptcha] script load timed out (network blocked or ad-blocker?)");
-      resolve(Boolean(window.grecaptcha));
-    }, 8000);
+      done();
+    }, 10000);
     s.onload = () => {
       window.clearTimeout(timer);
-      if (!window.grecaptcha) console.warn("[recaptcha] script loaded but window.grecaptcha is missing");
-      resolve(Boolean(window.grecaptcha));
+      window.grecaptcha?.ready ? window.grecaptcha.ready(done) : done();
     };
     s.onerror = () => {
       window.clearTimeout(timer);
@@ -96,36 +110,11 @@ function loadRecaptcha(siteKey: string): Promise<boolean> {
 export const recaptchaConfigured = Boolean(RECAPTCHA_SITE_KEY);
 export const recaptchaSiteKey = RECAPTCHA_SITE_KEY;
 
-/** Warm up the script so the widget/badge is ready before the user submits. */
+/** Warm up the script so the checkbox renders instantly. */
 export function primeRecaptcha() {
-  if (!RECAPTCHA_SITE_KEY || typeof window === "undefined") return;
-  void loadRecaptcha(RECAPTCHA_SITE_KEY);
+  void loadRecaptcha();
 }
 
-/** Returns a v3 token, or undefined when reCAPTCHA is unavailable (never throws). */
-export async function getRecaptchaToken(action: string): Promise<string | undefined> {
-  if (typeof window === "undefined") return undefined;
-  if (!RECAPTCHA_SITE_KEY) {
-    console.warn("[recaptcha] missing site key — set VITE_RECAPTCHA_SITE_KEY");
-    return undefined;
-  }
-  const ok = await loadRecaptcha(RECAPTCHA_SITE_KEY);
-  const g = window.grecaptcha;
-  if (!ok || !g) return undefined;
-  try {
-    await new Promise<void>((r) => g.ready(() => r()));
-    const token = await g.execute(RECAPTCHA_SITE_KEY, { action });
-    if (!token) console.warn("[recaptcha] execute returned an empty token");
-    return token || undefined;
-  } catch (e) {
-    console.error(
-      "[recaptcha] execute failed — check the site key is a v3 key and that this domain is authorised in the reCAPTCHA admin console:",
-      window.location.hostname,
-      e,
-    );
-    return undefined;
-  }
-}
 
 
 /* ---------------- core request ---------------- */
@@ -352,22 +341,22 @@ export type Submission = {
 
 /* ================= endpoints ================= */
 export const authApi = {
-  register: async (input: { name: string; mobile_number: string; country_code?: string }) => {
-    const recaptcha_token = await getRecaptchaToken("register");
-    return api.post(
+  register: async (
+    input: { name: string; mobile_number: string; country_code?: string },
+    recaptcha_token?: string,
+  ) =>
+    api.post(
       "/api/v1/users/register/",
       { country_code: "+91", ...input, ...(recaptcha_token ? { recaptcha_token } : {}) },
       false,
-    ) as Promise<{ otp_required?: boolean; recaptcha_required?: boolean; identifier?: string }>;
-  },
-  login: async (identifier: string) => {
-    const recaptcha_token = await getRecaptchaToken("login");
-    return api.post(
+    ) as Promise<{ otp_required?: boolean; recaptcha_required?: boolean; identifier?: string }>,
+  login: async (identifier: string, recaptcha_token?: string) =>
+    api.post(
       "/api/v1/users/login/",
       { identifier, ...(recaptcha_token ? { recaptcha_token } : {}) },
       false,
-    ) as Promise<{ otp_sent?: boolean; recaptcha_required?: boolean; password_required?: boolean }>;
-  },
+    ) as Promise<{ otp_sent?: boolean; recaptcha_required?: boolean; password_required?: boolean }>,
+
   verifyOtp: async (identifier: string, otp: string) => {
     const data = (await api.post("/api/v1/users/login/verify-otp/", { identifier, otp }, false)) as {
       access?: string;
