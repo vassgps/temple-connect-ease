@@ -427,89 +427,45 @@ function TabView({ tab, setView, setTab, profile, onSignOut }: {
   );
 }
 
-/* ================= CHATS ================= */
-function ChatsList({ openAI }: { openAI: () => void }) {
-  const notifQ = useQuery({ queryKey: ["notifications"], queryFn: authApi.notifications, retry: false });
-  const notifications = listOf<Notification>(notifQ.data);
-
+/* ================= NOTIFICATIONS INBOX ================= */
+function InboxScreen({ openAI, openThread }: { openAI: () => void; openThread: (id: string, name: string) => void }) {
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      <header className="px-5 pt-3 pb-4 bg-card">
-        <BrandRow right={
-          <div className="flex gap-2">
-            <button className="size-10 rounded-full bg-muted grid place-items-center"><Search className="size-5 text-ink-soft" /></button>
-            <button className="size-10 rounded-full bg-earth-soft grid place-items-center"><Plus className="size-5 text-earth" /></button>
-          </div>
-        } />
-        <h1 className="mt-3 text-2xl font-bold text-ink">Chats</h1>
-      </header>
+    <NotificationsInbox
+      openThread={openThread}
+      header={
+        <>
+          <header className="px-5 pt-3 pb-4 bg-card">
+            <BrandRow right={
+              <button className="size-10 rounded-full bg-muted grid place-items-center"><Bell className="size-5 text-ink-soft" /></button>
+            } />
+            <h1 className="mt-3 text-2xl font-bold text-ink">Notifications</h1>
+          </header>
 
-      <div className="flex-1 overflow-y-auto bg-card">
-        <button onClick={openAI} className="w-full px-5 py-4 flex gap-4 items-center bg-gradient-to-r from-earth-soft/70 to-gold/20 border-b border-border/50 active:opacity-80">
-          <div className="relative shrink-0">
-            <img src={meenakshiImg} alt="Meenakshi" width={816} height={816} loading="lazy" className="size-14 rounded-full object-cover object-top ring-2 ring-cream" />
-            <span className="absolute -bottom-0.5 -right-0.5 size-5 rounded-full bg-verified ring-2 ring-cream grid place-items-center">
-              <Bot className="size-3 text-white" />
-            </span>
-          </div>
-          <div className="flex-1 min-w-0 text-left">
-            <div className="flex justify-between items-baseline gap-2">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="font-bold text-ink truncate">Meenakshi</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-earth text-primary-foreground uppercase">AI</span>
-              </div>
-              <span className="text-xs text-ink-soft shrink-0">Always on</span>
+          <button onClick={openAI} className="shrink-0 w-full px-5 py-4 flex gap-4 items-center bg-gradient-to-r from-earth-soft/70 to-gold/20 border-y border-border/50 active:opacity-80">
+            <div className="relative shrink-0">
+              <img src={meenakshiImg} alt="Meenakshi" width={816} height={816} loading="lazy" className="size-14 rounded-full object-cover object-top ring-2 ring-cream" />
+              <span className="absolute -bottom-0.5 -right-0.5 size-5 rounded-full bg-verified ring-2 ring-cream grid place-items-center">
+                <Bot className="size-3 text-white" />
+              </span>
             </div>
-            <p className="text-sm text-ink-soft truncate mt-0.5">Ask about temples, poojas, festivals or your bookings…</p>
-          </div>
-        </button>
-
-        <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-          <h2 className="font-serif text-base font-bold text-ink">Temple Updates</h2>
-          {notifications.length > 0 && <span className="text-[11px] text-ink-soft">{notifications.length}</span>}
-        </div>
-
-        {notifQ.isLoading && <Loading label="Loading updates…" />}
-        {notifQ.isError && <ErrorState error={notifQ.error} retry={() => notifQ.refetch()} />}
-        {!notifQ.isLoading && !notifQ.isError && notifications.length === 0 && (
-          <EmptyState
-            icon={Bell}
-            title="No updates yet"
-            sub="Temple announcements and booking updates will appear here."
-          />
-        )}
-
-        {notifications.map((n, i) => (
-          <div key={n.uuid ?? n.id ?? i} className={`w-full px-5 py-4 flex gap-4 items-center ${i !== notifications.length - 1 ? "border-b border-border/50" : ""}`}>
-            <Avatar name={n.title ?? "TempleAddress"} size={52} />
             <div className="flex-1 min-w-0 text-left">
               <div className="flex justify-between items-baseline gap-2">
-                <span className="font-semibold text-ink truncate">{n.title ?? "TempleAddress"}</span>
-                <span className="text-xs text-ink-soft shrink-0">{shortDate(n.created_at)}</span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="font-bold text-ink truncate">Ask TempleAddress</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-earth text-primary-foreground uppercase">AI</span>
+                </div>
+                <span className="text-xs text-ink-soft shrink-0">Always on</span>
               </div>
-              <p className={`text-sm truncate mt-1 ${n.is_read === false ? "text-ink font-medium" : "text-ink-soft"}`}>{n.message ?? n.body ?? ""}</p>
+              <p className="text-sm text-ink-soft truncate mt-0.5">Meenakshi answers about temples, poojas, festivals or your bookings…</p>
             </div>
-          </div>
-        ))}
-
-        <div className="px-5 py-6">
-          <EmptyState
-            icon={MessageCircle}
-            title="Conversations coming soon"
-            sub="Direct and group chats with temples and service professionals are not enabled on your account yet."
-          />
-        </div>
-      </div>
-    </div>
+            <ChevronRight className="size-5 text-earth shrink-0" />
+          </button>
+        </>
+      }
+    />
   );
 }
 
-function shortDate(v?: string) {
-  if (!v) return "";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
-}
 
 /* ================= AI CHAT (Meenakshi) ================= */
 type AIMsg = { id: number; from: "me" | "ai"; text?: string; kind?: "text" | "image" | "file" | "voice"; meta?: string };
