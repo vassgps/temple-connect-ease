@@ -413,9 +413,13 @@ export function MeenakshiFlow({ kind, phone, back, onSubmitted, prefill }: { kin
             </div>
           ))}
         </div>
-        <div className="p-3 bg-card border-t border-border">
-          <button onClick={() => setDone(true)} className="w-full py-4 rounded-2xl bg-verified text-primary-foreground text-lg font-bold shadow-soft">✅ Confirm & Submit</button>
+        <div className="p-3 bg-card border-t border-border space-y-2">
+          {submit.isError && <p className="text-xs text-destructive text-center">{errorText(submit.error)}</p>}
+          <button onClick={() => submit.mutate()} disabled={submit.isPending} className="w-full py-4 rounded-2xl bg-verified text-primary-foreground text-lg font-bold shadow-soft disabled:opacity-50 flex items-center justify-center gap-2">
+            {submit.isPending && <Loader2 className="size-5 animate-spin" />} ✅ Confirm & Submit
+          </button>
         </div>
+
       </div>
     );
   }
