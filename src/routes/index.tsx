@@ -255,6 +255,8 @@ function Onboarding({ onDone }: { onDone: () => void }) {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [err, setErr] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const [captchaReset, setCaptchaReset] = useState(0);
 
   const identifier = `91${phone}`;
 
@@ -264,17 +266,19 @@ function Onboarding({ onDone }: { onDone: () => void }) {
   const sendOtp = useMutation({
     mutationFn: async () => {
       setErr(null);
+      const token = captcha ?? undefined;
       try {
-        await authApi.register({ name, mobile_number: phone, country_code: "+91" });
+        await authApi.register({ name, mobile_number: phone, country_code: "+91" }, token);
       } catch {
         /* existing user — continue to login */
       }
-      return authApi.login(identifier);
+      return authApi.login(identifier, token);
     },
     onSuccess: (res) => {
       if (res?.recaptcha_required) {
+        setCaptchaReset((n) => n + 1);
         setErr(recaptchaConfigured
-          ? `reCAPTCHA could not verify this request. Make sure the site key is a v3 key and that ${typeof window !== "undefined" ? window.location.hostname : "this domain"} is added in the reCAPTCHA admin console.`
+          ? "Please tick the “I'm not a robot” box and try again."
           : "reCAPTCHA is required by the server. Add VITE_RECAPTCHA_SITE_KEY to enable OTP login.");
         return;
       }
@@ -282,8 +286,9 @@ function Onboarding({ onDone }: { onDone: () => void }) {
       setNote(`OTP sent to +91 ${phone}`);
       setStep(2);
     },
-    onError: (e) => setErr(errorText(e)),
+    onError: (e) => { setCaptchaReset((n) => n + 1); setErr(errorText(e)); },
   });
+
 
   const verify = useMutation({
     mutationFn: () => authApi.verifyOtp(identifier, otp.join("")),
