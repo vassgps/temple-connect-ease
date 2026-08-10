@@ -375,7 +375,7 @@ export function MeenakshiFlow({ kind, phone, back, onSubmitted, prefill }: { kin
 
   const skip = () => answer("");
 
-  if (done) {
+  if (submit.isSuccess) {
     return (
       <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-4 p-8 bg-cream text-center">
         <div className="size-20 rounded-full bg-verified grid place-items-center"><Check className="size-10 text-primary-foreground" /></div>
