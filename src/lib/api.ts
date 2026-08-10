@@ -7,7 +7,14 @@
 export const API_BASE =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "https://dev.templeaddress.com";
 
-const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
+const env = import.meta.env as Record<string, string | undefined>;
+/** Accept every naming variant so the key works wherever it was configured. */
+const RECAPTCHA_SITE_KEY =
+  env.VITE_RECAPTCHA_SITE_KEY ||
+  env.VITE_USER_RECAPTCHA_SITE_KEY ||
+  env.VITE_USER_RECAPTCHA_PUBLIC_KEY ||
+  env.USER_RECAPTCHA_PUBLIC_KEY ||
+  undefined;
 
 const ACCESS_KEY = "ta_access";
 const REFRESH_KEY = "ta_refresh";
