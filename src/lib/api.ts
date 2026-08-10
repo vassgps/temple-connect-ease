@@ -229,7 +229,14 @@ export function countOf(data: unknown): number {
 }
 
 /* ================= types ================= */
-export type ListingType = "temples" | "services" | "festivals" | "holyplaces" | "local_business";
+export type ListingType =
+  | "temples"
+  | "services"
+  | "festivals"
+  | "holyplaces"
+  | "local_business"
+  | "shop_vendor"
+  | "other";
 
 export type Listing = {
   id: number;
