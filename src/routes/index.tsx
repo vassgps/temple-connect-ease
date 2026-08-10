@@ -11,8 +11,7 @@ import {
 } from "lucide-react";
 import logoMarkAsset from "@/assets/logo-mark.png.asset.json";
 import logoFullAsset from "@/assets/logo-full.png.asset.json";
-import { ListingHub, MyListings, MeenakshiFlow, type FlowKind } from "@/components/listing-flow";
-import { SubmitScreen, type SubmitKind } from "@/components/quick-submit";
+import { SubmitScreen } from "@/components/submit-wizard";
 import meenakshiImg from "@/assets/meenakshi.jpg";
 import { RecaptchaCheckbox } from "@/components/recaptcha-checkbox";
 import { NotificationsInbox, NotificationThreadView, useUnreadCount } from "@/components/notifications";
@@ -52,9 +51,6 @@ type View =
   | { name: "book-payment" }
   | { name: "book-receipt"; code: string }
   | { name: "refer" }
-  | { name: "listing-hub" }
-  | { name: "my-listings" }
-  | { name: "meenakshi"; kind: FlowKind; prefill?: Record<string, string> }
   | { name: "events" };
 
 /* ================= APP SHELL ================= */
@@ -148,24 +144,6 @@ function App() {
                 <BookReceipt code={view.code} home={() => { setView({ name: "tab" }); setTab("bookings"); }} />
               )}
               {view.name === "refer" && <ReferEarn profile={profile!} back={() => setView({ name: "tab" })} />}
-              {view.name === "listing-hub" && (
-                <ListingHub
-                  phone={phoneOf(profile)}
-                  back={() => setView({ name: "tab" })}
-                  start={(k) => setView({ name: "meenakshi", kind: k })}
-                  openListings={() => setView({ name: "my-listings" })}
-                />
-              )}
-              {view.name === "my-listings" && <MyListings back={() => setView({ name: "listing-hub" })} />}
-              {view.name === "meenakshi" && (
-                <MeenakshiFlow
-                  kind={view.kind}
-                  prefill={view.prefill}
-                  phone={phoneOf(profile)}
-                  back={() => setView(view.prefill ? { name: "tab" } : { name: "listing-hub" })}
-                  onSubmitted={() => setView({ name: "my-listings" })}
-                />
-              )}
               {view.name === "events" && (
                 <EventsFeed back={() => setView({ name: "tab" })} open={(slug) => setView({ name: "temple", slug })} />
               )}
@@ -420,18 +398,14 @@ function TabView({ tab, setView, setTab, profile, onSignOut }: {
   if (tab === "explore") return <ExploreTemples open={(slug) => setView({ name: "temple", slug })} openEvents={() => setView({ name: "events" })} />;
   if (tab === "bookings") return <BookingsList goExplore={() => setTab("explore")} openReceipt={(code) => setView({ name: "book-receipt", code })} />;
   if (tab === "submit") return (
-    <SubmitScreen
-      logoMark={logoMark}
-      openFullFlow={(k: SubmitKind, prefill?: Record<string, string>) =>
-        setView({ name: "meenakshi", kind: k === "festival" ? "event" : k, prefill })}
-    />
+    <SubmitScreen logoMark={logoMark} />
   );
   return (
     <ProfileScreen
       profile={profile}
       openRefer={() => setView({ name: "refer" })}
-      openHub={() => setView({ name: "listing-hub" })}
-      openListings={() => setView({ name: "my-listings" })}
+      openHub={() => setTab("submit")}
+      openListings={() => setTab("submit")}
       onSignOut={onSignOut}
       goSubmit={() => setTab("submit")}
     />
@@ -1321,7 +1295,7 @@ function ProfileScreen({ profile, openRefer, openHub, openListings, onSignOut, g
           <div className="size-12 rounded-xl bg-earth-soft grid place-items-center"><Sparkles className="size-6 text-earth" /></div>
           <div className="flex-1">
             <div className="font-semibold text-ink">Add Full Listing Details</div>
-            <div className="text-xs text-ink-soft">Guided step-by-step listing helper</div>
+            <div className="text-xs text-ink-soft">Step-by-step form, 4 short steps</div>
           </div>
           <ChevronRight className="size-5 text-earth" />
         </button>

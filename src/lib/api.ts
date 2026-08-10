@@ -229,7 +229,14 @@ export function countOf(data: unknown): number {
 }
 
 /* ================= types ================= */
-export type ListingType = "temples" | "services" | "festivals" | "holyplaces" | "local_business";
+export type ListingType =
+  | "temples"
+  | "services"
+  | "festivals"
+  | "holyplaces"
+  | "local_business"
+  | "shop_vendor"
+  | "other";
 
 export type Listing = {
   id: number;
@@ -367,6 +374,7 @@ export type Submission = {
   name?: string;
   listing_type?: ListingType;
   status?: string;
+  code?: string;
   city?: string | null;
   location?: string | null;
   completeness?: number | null;
@@ -467,6 +475,7 @@ export const bookingApi = {
 
 export const listingApi = {
   mySubmissions: () => api.get("/api/v1/cms/my-listing-submissions/"),
+  createForm: (form: FormData) => api.postForm("/api/v1/cms/listing-submissions/", form),
   submissions: () => api.get("/api/v1/cms/listing-submissions/"),
   create: (payload: Record<string, unknown>, files?: Record<string, File | File[] | undefined>) => {
     const form = toFormData(payload, files);
