@@ -19,7 +19,7 @@ import { NotificationsInbox, NotificationThreadView, useUnreadCount } from "@/co
 import {
   authApi, bookingApi, discoverApi, listingApi, listOf, countOf, money, placeOf, errorText,
   tokens, recaptchaConfigured, primeRecaptcha,
-  type Listing, type Pooja, type Me, type Notification, type Booking,
+  type Listing, type Pooja, type Me, type Booking,
 } from "@/lib/api";
 
 const logoMark = logoMarkAsset.url;
