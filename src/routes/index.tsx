@@ -193,11 +193,10 @@ function Avatar({ name, img, size = 48 }: { name: string; img?: string | null; s
 function BrandRow({ right }: { right?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <img src={logoMark} alt="" className="size-9" />
-        <img src={logoFull} alt="TempleAddress" className="h-6 object-contain hidden sm:block" />
-        <span className="font-serif text-xl font-bold text-earth sm:hidden">TempleAddress</span>
+      <div className="flex items-center">
+        <img src={logoFull} alt="TempleAddress" className="h-9 w-auto object-contain object-left" />
       </div>
+
       {right}
     </div>
   );
