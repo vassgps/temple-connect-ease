@@ -1185,51 +1185,163 @@ function BookReceipt({ code, home }: { code: string; home: () => void }) {
 }
 
 /* ================= BOOKINGS ================= */
+type AnyRec = Record<string, unknown>;
+const s = (v: unknown) => (v === null || v === undefined || v === "" ? undefined : String(v));
+const num = (v: unknown) => {
+  const n = typeof v === "string" ? Number(v) : typeof v === "number" ? v : NaN;
+  return Number.isFinite(n) ? n : undefined;
+};
+
+function bookingAmount(b: AnyRec): number | undefined {
+  const rb = b.receipt_breakdown as AnyRec | undefined;
+  const pay = b.payment as AnyRec | undefined;
+  const candidates = [rb?.total_payable, pay?.total_paid, b.total_payable, b.booking_amount, b.amount, b.total_amount];
+  for (const c of candidates) {
+    const n = num(c);
+    if (n !== undefined) return n;
+  }
+  const items = bookingItems(b);
+  if (items.length) {
+    const sum = items.reduce((acc, it) => acc + (num(it.amount ?? it.total ?? it.rate) ?? 0), 0);
+    if (sum > 0) return sum;
+  }
+  return undefined;
+}
+
+function bookingItems(b: AnyRec): AnyRec[] {
+  const groups = [b.pooja_items, b.service_items, b.donation_items, b.items];
+  const out: AnyRec[] = [];
+  for (const g of groups) if (Array.isArray(g)) out.push(...(g as AnyRec[]));
+  return out;
+}
+
+function fmtDate(v?: string) {
+  if (!v) return undefined;
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return v;
+  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function BookingCard({ b, onOpen }: { b: AnyRec; onOpen: () => void }) {
+  const title = s(b.listing_title) ?? s(b.temple_name) ?? s(b.listing_name) ?? s(b.title) ?? "Pooja Booking";
+  const code = s(b.booking_code) ?? s(b.code) ?? s(b.booking_id) ?? s(b.id);
+  const status = s(b.status) ?? s(b.booking_status);
+  const pay = b.payment as AnyRec | undefined;
+  const payStatus = s(b.payment_status) ?? s(pay?.status);
+  const amount = bookingAmount(b);
+  const created = fmtDate(s(b.created_at) ?? s(b.created) ?? s(b.booking_date));
+  const items = bookingItems(b);
+  const devotee = s(b.devotee_name) ?? s((b.devotee as AnyRec | undefined)?.name);
+  const star = s(b.star) ?? s(b.nakshatra) ?? s(b.devotee_star);
+  const showReceipt =
+    b.receipt_available === true || ["confirmed", "completed", "upcoming"].includes((status ?? "").toLowerCase());
+
+  return (
+    <button
+      onClick={onOpen}
+      className="w-full text-left rounded-3xl bg-card ring-1 ring-border p-3.5 active:scale-[0.98] active:bg-earth-soft/50 transition-all duration-150"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="font-serif text-[15px] text-ink leading-snug line-clamp-2">{title}</div>
+          <div className="flex items-center gap-2 mt-1">
+            {code && <span className="font-mono text-[10px] text-ink-soft">{code}</span>}
+            {created && <span className="text-[10px] text-ink-soft">· {created}</span>}
+          </div>
+        </div>
+        <div className="shrink-0 text-right space-y-1">
+          {status && (
+            <span className="block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-earth-soft text-earth">{status}</span>
+          )}
+          {payStatus && (
+            <span className="block text-[9px] font-semibold uppercase text-ink-soft">{payStatus}</span>
+          )}
+        </div>
+      </div>
+
+      {items.length > 0 ? (
+        <div className="mt-2.5 space-y-1.5">
+          {items.map((it, i) => {
+            const nm = s(it.pooja_name) ?? s(it.name) ?? s(it.service_name) ?? s(it.item_name) ?? "Item";
+            const meta = [
+              s(it.devotee_name) ?? devotee,
+              s(it.star) ?? s(it.nakshatra) ?? star,
+              fmtDate(s(it.pooja_date) ?? s(it.date)),
+              s(it.pooja_slot) ?? s(it.slot) ?? s(it.time),
+              num(it.quantity) && num(it.quantity)! > 1 ? `×${num(it.quantity)}` : undefined,
+            ].filter(Boolean).join(" · ");
+            const amt = num(it.amount ?? it.total ?? it.rate);
+            return (
+              <div key={i} className="flex items-start justify-between gap-2 rounded-xl bg-cream/70 px-2.5 py-1.5">
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-ink line-clamp-1">{nm}</div>
+                  {meta && <div className="text-[10px] text-ink-soft line-clamp-2">{meta}</div>}
+                </div>
+                {amt !== undefined && <div className="text-xs font-semibold text-ink shrink-0">{money(amt)}</div>}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="mt-2 text-[11px] text-ink-soft">
+          {[devotee, star, fmtDate(s(b.pooja_date))].filter(Boolean).join(" · ") || "Details unavailable"}
+        </div>
+      )}
+
+      <div className="mt-2.5 flex items-center justify-between">
+        {showReceipt ? (
+          <span className="text-xs font-bold text-verified">View Receipt →</span>
+        ) : (
+          <span className="text-[11px] text-ink-soft">Tap for details</span>
+        )}
+        {amount !== undefined && <span className="font-serif font-bold text-earth">{money(amount)}</span>}
+      </div>
+    </button>
+  );
+}
+
 function BookingsList({ goExplore, openReceipt }: { goExplore: () => void; openReceipt: (code: string) => void }) {
   const q = useQuery({ queryKey: ["bookings"], queryFn: bookingApi.list, retry: false });
   const statsQ = useQuery({ queryKey: ["booking-stats"], queryFn: bookingApi.stats, retry: false });
-  const bookings = listOf<Booking>(q.data);
+  const bookings = listOf<AnyRec>(q.data);
   const stats = statsQ.data as Record<string, number | string> | undefined;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="flex-1 flex flex-col min-h-0 relative">
       <header className="px-5 pt-3 pb-4 bg-card">
         <BrandRow />
         <h1 className="mt-3 text-2xl font-bold text-ink">My Bookings</h1>
         {stats && (
-          <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar -mx-1 px-1">
             {Object.entries(stats).slice(0, 4).map(([k, v]) => (
-              <span key={k} className="shrink-0 px-3 py-1.5 rounded-full bg-muted text-xs font-semibold text-ink-soft">
+              <span key={k} className="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full bg-muted text-xs font-semibold text-ink-soft">
                 {k.replace(/_/g, " ")}: <span className="text-earth">{String(v)}</span>
               </span>
             ))}
           </div>
         )}
       </header>
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+      <div className="flex-1 overflow-y-auto px-5 py-4 pb-28 space-y-3">
         {q.isLoading && <Loading label="Loading bookings…" />}
         {q.isError && <ErrorState error={q.error} retry={() => q.refetch()} />}
         {!q.isLoading && !q.isError && bookings.length === 0 && (
           <EmptyState icon={CalendarCheck} title="No bookings yet" sub="Your pooja bookings and receipts will appear here." />
         )}
-        {bookings.map((b, i) => (
-          <button key={b.uuid ?? b.booking_code ?? i} onClick={() => b.booking_code && openReceipt(b.booking_code)} className="w-full text-left rounded-3xl bg-card ring-1 ring-border p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div className="font-serif text-base text-ink leading-tight truncate">{b.listing_title ?? b.temple_name ?? "Pooja Booking"}</div>
-              {b.status && <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase shrink-0 bg-earth-soft text-earth">{b.status}</span>}
-            </div>
-            <div className="text-xs text-ink-soft mt-0.5">{[b.items?.[0]?.pooja_name ?? b.items?.[0]?.name, b.pooja_date ?? b.booking_date].filter(Boolean).join(" · ")}</div>
-            <div className="mt-2 flex items-center justify-between">
-              <span className="font-mono text-[10px] text-ink-soft">{b.booking_code}</span>
-              <span className="font-serif font-bold text-earth">{money(b.total_amount ?? 0)}</span>
-            </div>
-          </button>
-        ))}
-        <button onClick={goExplore} className="w-full mt-4 h-14 rounded-2xl border-2 border-dashed border-earth/40 text-earth font-semibold flex items-center justify-center gap-2"><Plus className="size-5" /> Book a new Pooja</button>
+        {bookings.map((b, i) => {
+          const code = s(b.booking_code) ?? s(b.code);
+          return <BookingCard key={s(b.uuid) ?? code ?? i} b={b} onOpen={() => code && openReceipt(code)} />;
+        })}
       </div>
+      <button
+        onClick={goExplore}
+        className="absolute right-5 bottom-[82px] h-12 pl-4 pr-5 rounded-full bg-earth text-white font-bold text-sm flex items-center gap-2 shadow-lg active:scale-95 transition-all duration-150"
+      >
+        <Plus className="size-5" /> Book Pooja
+      </button>
     </div>
   );
 }
+
 
 /* ================= PROFILE ================= */
 function ProfileScreen({ profile, openRefer, openHub, openListings, onSignOut, goSubmit }: {
