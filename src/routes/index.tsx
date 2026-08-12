@@ -995,6 +995,7 @@ function BookSelect({ slug, profile, back, next }: { slug: string; profile: Me; 
             slug, listingUuid: q.data?.uuid, title: q.data?.title ?? "", poojas: chosen,
             devotee: nameOf(profile), phone: phoneOf(profile), nakshatra: "",
             date: new Date().toISOString().slice(0, 10), donation: "",
+            collectPrasad: "counter",
           })}
           disabled={chosen.length === 0}
           className="h-14 px-8 rounded-2xl bg-earth text-primary-foreground font-bold shadow-soft disabled:opacity-50 flex items-center gap-2"
