@@ -1080,19 +1080,37 @@ function BookPayment({ draft, back, done }: { draft: BookDraft; back: () => void
 
   const pay = useMutation({
     mutationFn: async () => {
-      const created = (await bookingApi.create({
+      const payload: Record<string, unknown> = {
+        purpose: "temple_pooja",
+        listing: draft.listingUuid,
+        listing_uuid: draft.listingUuid,
         listing_slug: draft.slug,
-        devotee_name: draft.devotee,
-        contact_number: draft.phone,
+        name: draft.devotee,
+        phone: draft.phone,
         country_code: "+91",
-        nakshatra: draft.nakshatra || undefined,
-        booking_date: draft.date,
-        donation_amount: donation || 0,
-        items: draft.poojas.map((p) => ({ pooja_uuid: p.uuid, pooja: p.id, quantity: 1, amount: p.rate })),
-      })) as { booking_code?: string; uuid?: string; booking_uuid?: string };
+        pooja_items: draft.poojas.map((p) => ({
+          pooja: p.uuid,
+          name: draft.devotee,
+          star: draft.nakshatra || "",
+          pooja_date: draft.date,
+          pooja_slot: p.start_time ?? "",
+          quantity: 1,
+          collect_prasad: false,
+        })),
+      };
+      if (donation > 0) {
+        payload.donation_details = { amount: donation, purpose: "Donation", details: {} };
+      }
+      if (import.meta.env.DEV) console.log("[booking] POST /api/v1/booking/public/", payload);
 
-      const code = created?.booking_code;
+      const created = (await bookingApi.create(payload)) as {
+        booking_code?: string; code?: string; uuid?: string; booking_uuid?: string;
+      };
+
+      const code = created?.booking_code ?? created?.code;
       const uuid = created?.booking_uuid ?? created?.uuid;
+      if (!code && !uuid) throw new Error("Booking created but no booking code was returned.");
+
       await bookingApi.checkout({ booking_code: code, booking_uuid: uuid });
       if (!code) throw new Error("Booking created but no booking code was returned.");
       return code;
