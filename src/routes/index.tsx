@@ -1109,9 +1109,11 @@ function BookPayment({ draft, back, done }: { draft: BookDraft; back: () => void
   const subtotal = draft.poojas.reduce((a, b) => a + Number(b.rate || 0), 0);
   const donation = Number(draft.donation || 0);
   const total = subtotal + donation;
+  const [stage, setStage] = useState<null | "booking" | "checkout" | "gateway" | "processing">(null);
 
   const pay = useMutation({
     mutationFn: async () => {
+      setStage("booking");
       const pooja_items = draft.poojas.map((p) => {
         const item: Record<string, unknown> = {
           pooja: p.uuid,
@@ -1148,18 +1150,65 @@ function BookPayment({ draft, back, done }: { draft: BookDraft; back: () => void
       };
 
       const code = created?.booking_code ?? created?.code;
-      const uuid = created?.booking_uuid ?? created?.uuid;
-      if (!code && !uuid) throw new Error("Booking created but no booking code was returned.");
+      const uuid = created?.booking_uuid ?? created?.uuid ?? code;
+      if (!code && !uuid) throw new Error("Booking created but no booking reference was returned.");
+      qc.invalidateQueries({ queryKey: ["bookings"] });
 
-      await bookingApi.checkout({ booking_code: code, booking_uuid: uuid });
-      if (!code) throw new Error("Booking created but no booking code was returned.");
+      /* ---- checkout ---- */
+      setStage("checkout");
+      const body: Record<string, unknown> = {
+        payment_method: "razorpay",
+        client_return_url: `${window.location.origin}/bookings`,
+      };
+      let checkout = (await bookingApi.checkout(String(uuid), body)) as Record<string, unknown>;
+      if (checkout?.requires_gateway_selection === true) {
+        checkout = (await bookingApi.checkout(String(uuid), {
+          ...body,
+          gateway: "razorpay",
+          payment_gateway: "razorpay",
+        })) as Record<string, unknown>;
+      }
+      if (import.meta.env.DEV) console.log("[booking] checkout response", checkout);
+
+      const key = checkout?.key as string | undefined;
+      const orderId = (checkout?.order_id ?? checkout?.razorpay_order_id) as string | undefined;
+      if (!key || !orderId) {
+        throw new Error(
+          (checkout?.message as string) ||
+            "Payment gateway is not available for this temple yet. Please try again later.",
+        );
+      }
+
+      setStage("gateway");
+      const result = await openRazorpay({
+        key,
+        order_id: orderId,
+        amount: (checkout.amount as number | string) ?? Math.round(total * 100),
+        currency: (checkout.currency as string) ?? "INR",
+        name: "TempleAddress",
+        description: draft.poojas.map((p) => p.name).join(", ") || draft.title,
+        prefill: (checkout.prefill as Record<string, unknown>) ?? { name: draft.devotee, contact: draft.phone },
+        notes: (checkout.notes as Record<string, unknown>) ?? {},
+      });
+      if (!result) throw new Error("Payment was cancelled before completion.");
+
+      setStage("processing");
+      if (!code) throw new Error("Payment submitted, but no booking code was returned.");
       return code;
     },
     onSuccess: (code) => {
       qc.invalidateQueries({ queryKey: ["bookings"] });
       done(code);
     },
+    onError: () => setStage(null),
   });
+
+  const label =
+    stage === "booking" ? "Creating booking…"
+    : stage === "checkout" ? "Preparing payment…"
+    : stage === "gateway" ? "Waiting for payment…"
+    : stage === "processing" ? "Confirming payment…"
+    : `Pay ${money(total)}`;
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -1183,13 +1232,14 @@ function BookPayment({ draft, back, done }: { draft: BookDraft; back: () => void
       </div>
       <div className="shrink-0 p-4 bg-card border-t border-border">
         <button onClick={() => pay.mutate()} disabled={pay.isPending} className="w-full h-14 rounded-2xl bg-earth text-primary-foreground font-bold shadow-soft flex items-center justify-center gap-2 disabled:opacity-50">
-          {pay.isPending ? <Loader2 className="size-5 animate-spin" /> : null} Pay {money(total)}
+          {pay.isPending ? <Loader2 className="size-5 animate-spin" /> : null} {label}
         </button>
         <div className="flex items-center justify-center gap-1.5 mt-3 text-xs text-ink-soft"><ShieldCheck className="size-3.5 text-verified" />Secured by <span className="font-bold text-[#3395FF]">Razorpay</span></div>
       </div>
     </div>
   );
 }
+
 
 function Row({ label, value, bold, muted, big }: { label: string; value: string; bold?: boolean; muted?: boolean; big?: boolean }) {
   return (
