@@ -1058,6 +1058,37 @@ function BookDetails({ draft, profile, back, next }: { draft: BookDraft; profile
             <input value={d.donation} onChange={(e) => setD({ ...d, donation: e.target.value.replace(/[^\d.]/g, "") })} inputMode="decimal" placeholder="0" className="w-full h-14 pl-9 pr-4 rounded-2xl bg-card ring-1 ring-border font-semibold text-ink outline-none" />
           </div>
         </Field>
+
+        <div className="p-4 rounded-2xl bg-card ring-1 ring-border space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-semibold text-ink">Collect Prasadam / പ്രസാദം</div>
+            <button
+              onClick={() => setD({ ...d, collectPrasad: d.collectPrasad === "exempt" ? "counter" : "exempt" })}
+              className={`w-11 h-6 rounded-full p-0.5 transition ${d.collectPrasad !== "exempt" ? "bg-earth" : "bg-border"}`}
+            >
+              <span className={`block size-5 rounded-full bg-cream transition ${d.collectPrasad !== "exempt" ? "translate-x-5" : ""}`} />
+            </button>
+          </div>
+          {d.collectPrasad !== "exempt" && (
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setD({ ...d, collectPrasad: "counter", postage: undefined })}
+                className={`p-3 rounded-xl text-left ring-1 transition ${d.collectPrasad === "counter" ? "bg-earth text-primary-foreground ring-earth" : "bg-muted ring-border text-ink"}`}
+              >
+                <div className="text-xs font-semibold">Collect at Temple</div>
+                <div className="text-[10px] opacity-80">Counter pickup</div>
+              </button>
+              <button
+                onClick={() => setD({ ...d, collectPrasad: "courier", postage: "normal" })}
+                className={`p-3 rounded-xl text-left ring-1 transition ${d.collectPrasad === "courier" ? "bg-earth text-primary-foreground ring-earth" : "bg-muted ring-border text-ink"}`}
+              >
+                <div className="text-xs font-semibold">Courier Delivery</div>
+                <div className="text-[10px] opacity-80">Postal to your address</div>
+              </button>
+            </div>
+          )}
+          <p className="text-[11px] text-ink-soft">Choose how you want to receive prasadam after the pooja.</p>
+        </div>
       </div>
       <div className="shrink-0 p-4 bg-card border-t border-border">
         <div className="flex items-center justify-between mb-3"><span className="text-ink-soft text-sm">Order Total</span><span className="text-xl font-bold text-ink">{money(total)}</span></div>
