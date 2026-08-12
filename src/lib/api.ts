@@ -511,6 +511,70 @@ function toFormData(
   return form;
 }
 
+/* ================= Razorpay checkout ================= */
+type RazorpayOptions = {
+  key: string;
+  order_id: string;
+  amount: number | string;
+  currency: string;
+  name: string;
+  description?: string;
+  prefill?: Record<string, unknown>;
+  notes?: Record<string, unknown>;
+  theme?: { color?: string };
+  handler: (r: Record<string, unknown>) => void;
+  modal?: { ondismiss?: () => void };
+};
+
+let razorpayLoader: Promise<boolean> | null = null;
+
+/** Loads Razorpay Checkout script once. */
+export function loadRazorpay(): Promise<boolean> {
+  if (typeof window === "undefined") return Promise.resolve(false);
+  const w = window as unknown as { Razorpay?: new (o: RazorpayOptions) => { open: () => void } };
+  if (w.Razorpay) return Promise.resolve(true);
+  if (razorpayLoader) return razorpayLoader;
+  razorpayLoader = new Promise<boolean>((resolve) => {
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.async = true;
+    s.onload = () => resolve(Boolean(w.Razorpay));
+    s.onerror = () => {
+      razorpayLoader = null;
+      resolve(false);
+    };
+    document.head.appendChild(s);
+  });
+  return razorpayLoader;
+}
+
+/** Opens Razorpay Checkout and resolves with the handler payload, or null when dismissed. */
+export async function openRazorpay(
+  opts: Omit<RazorpayOptions, "handler" | "modal">,
+): Promise<Record<string, unknown> | null> {
+  const ok = await loadRazorpay();
+  const w = window as unknown as { Razorpay?: new (o: RazorpayOptions) => { open: () => void } };
+  if (!ok || !w.Razorpay) throw new Error("Could not load Razorpay Checkout. Please check your connection.");
+  return new Promise((resolve) => {
+    let settled = false;
+    const rz = new w.Razorpay!({
+      ...opts,
+      theme: { color: "#C2410C" },
+      handler: (r) => {
+        settled = true;
+        resolve(r);
+      },
+      modal: {
+        ondismiss: () => {
+          if (!settled) resolve(null);
+        },
+      },
+    });
+    rz.open();
+  });
+}
+
+
 /* ================= helpers ================= */
 export function money(v: string | number | null | undefined) {
   const n = typeof v === "string" ? Number(v) : (v ?? 0);
