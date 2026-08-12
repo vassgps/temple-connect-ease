@@ -39,7 +39,7 @@ export const Route = createFileRoute("/")({
 });
 
 type Tab = "inbox" | "explore" | "bookings" | "submit" | "profile";
-type BookDraft = { slug: string; listingUuid?: string; title: string; poojas: Pooja[]; devotee: string; phone: string; nakshatra: string; date: string; donation: string; code?: string };
+type BookDraft = { slug: string; listingUuid?: string; title: string; poojas: Pooja[]; devotee: string; phone: string; nakshatra: string; date: string; donation: string; collectPrasad: "counter" | "courier" | "exempt"; postage?: "normal"; code?: string };
 
 type View =
   | { name: "tab" }
@@ -995,6 +995,7 @@ function BookSelect({ slug, profile, back, next }: { slug: string; profile: Me; 
             slug, listingUuid: q.data?.uuid, title: q.data?.title ?? "", poojas: chosen,
             devotee: nameOf(profile), phone: phoneOf(profile), nakshatra: "",
             date: new Date().toISOString().slice(0, 10), donation: "",
+            collectPrasad: "counter",
           })}
           disabled={chosen.length === 0}
           className="h-14 px-8 rounded-2xl bg-earth text-primary-foreground font-bold shadow-soft disabled:opacity-50 flex items-center gap-2"
@@ -1057,6 +1058,37 @@ function BookDetails({ draft, profile, back, next }: { draft: BookDraft; profile
             <input value={d.donation} onChange={(e) => setD({ ...d, donation: e.target.value.replace(/[^\d.]/g, "") })} inputMode="decimal" placeholder="0" className="w-full h-14 pl-9 pr-4 rounded-2xl bg-card ring-1 ring-border font-semibold text-ink outline-none" />
           </div>
         </Field>
+
+        <div className="p-4 rounded-2xl bg-card ring-1 ring-border space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-semibold text-ink">Collect Prasadam / പ്രസാദം</div>
+            <button
+              onClick={() => setD({ ...d, collectPrasad: d.collectPrasad === "exempt" ? "counter" : "exempt" })}
+              className={`w-11 h-6 rounded-full p-0.5 transition ${d.collectPrasad !== "exempt" ? "bg-earth" : "bg-border"}`}
+            >
+              <span className={`block size-5 rounded-full bg-cream transition ${d.collectPrasad !== "exempt" ? "translate-x-5" : ""}`} />
+            </button>
+          </div>
+          {d.collectPrasad !== "exempt" && (
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setD({ ...d, collectPrasad: "counter", postage: undefined })}
+                className={`p-3 rounded-xl text-left ring-1 transition ${d.collectPrasad === "counter" ? "bg-earth text-primary-foreground ring-earth" : "bg-muted ring-border text-ink"}`}
+              >
+                <div className="text-xs font-semibold">Collect at Temple</div>
+                <div className="text-[10px] opacity-80">Counter pickup</div>
+              </button>
+              <button
+                onClick={() => setD({ ...d, collectPrasad: "courier", postage: "normal" })}
+                className={`p-3 rounded-xl text-left ring-1 transition ${d.collectPrasad === "courier" ? "bg-earth text-primary-foreground ring-earth" : "bg-muted ring-border text-ink"}`}
+              >
+                <div className="text-xs font-semibold">Courier Delivery</div>
+                <div className="text-[10px] opacity-80">Postal to your address</div>
+              </button>
+            </div>
+          )}
+          <p className="text-[11px] text-ink-soft">Choose how you want to receive prasadam after the pooja.</p>
+        </div>
       </div>
       <div className="shrink-0 p-4 bg-card border-t border-border">
         <div className="flex items-center justify-between mb-3"><span className="text-ink-soft text-sm">Order Total</span><span className="text-xl font-bold text-ink">{money(total)}</span></div>
@@ -1080,6 +1112,22 @@ function BookPayment({ draft, back, done }: { draft: BookDraft; back: () => void
 
   const pay = useMutation({
     mutationFn: async () => {
+      const pooja_items = draft.poojas.map((p) => {
+        const item: Record<string, unknown> = {
+          pooja: p.uuid,
+          name: draft.devotee,
+          star: draft.nakshatra || "",
+          pooja_date: draft.date,
+          pooja_slot: p.start_time ?? "Morning",
+          quantity: 1,
+          collect_prasad: draft.collectPrasad,
+        };
+        if (draft.collectPrasad === "courier" && draft.postage) {
+          item.postage = draft.postage;
+        }
+        return item;
+      });
+
       const payload: Record<string, unknown> = {
         purpose: "temple_pooja",
         listing: draft.listingUuid,
@@ -1088,15 +1136,7 @@ function BookPayment({ draft, back, done }: { draft: BookDraft; back: () => void
         name: draft.devotee,
         phone: draft.phone,
         country_code: "+91",
-        pooja_items: draft.poojas.map((p) => ({
-          pooja: p.uuid,
-          name: draft.devotee,
-          star: draft.nakshatra || "",
-          pooja_date: draft.date,
-          pooja_slot: p.start_time ?? "",
-          quantity: 1,
-          collect_prasad: true,
-        })),
+        pooja_items,
       };
       if (donation > 0) {
         payload.donation_details = { amount: donation, purpose: "Donation", details: {} };
