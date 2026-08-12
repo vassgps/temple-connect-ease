@@ -1112,6 +1112,22 @@ function BookPayment({ draft, back, done }: { draft: BookDraft; back: () => void
 
   const pay = useMutation({
     mutationFn: async () => {
+      const pooja_items = draft.poojas.map((p) => {
+        const item: Record<string, unknown> = {
+          pooja: p.uuid,
+          name: draft.devotee,
+          star: draft.nakshatra || "",
+          pooja_date: draft.date,
+          pooja_slot: p.start_time ?? "Morning",
+          quantity: 1,
+          collect_prasad: draft.collectPrasad,
+        };
+        if (draft.collectPrasad === "courier" && draft.postage) {
+          item.postage = draft.postage;
+        }
+        return item;
+      });
+
       const payload: Record<string, unknown> = {
         purpose: "temple_pooja",
         listing: draft.listingUuid,
@@ -1120,15 +1136,7 @@ function BookPayment({ draft, back, done }: { draft: BookDraft; back: () => void
         name: draft.devotee,
         phone: draft.phone,
         country_code: "+91",
-        pooja_items: draft.poojas.map((p) => ({
-          pooja: p.uuid,
-          name: draft.devotee,
-          star: draft.nakshatra || "",
-          pooja_date: draft.date,
-          pooja_slot: p.start_time ?? "",
-          quantity: 1,
-          collect_prasad: true,
-        })),
+        pooja_items,
       };
       if (donation > 0) {
         payload.donation_details = { amount: donation, purpose: "Donation", details: {} };
