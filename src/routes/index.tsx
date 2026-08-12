@@ -39,7 +39,7 @@ export const Route = createFileRoute("/")({
 });
 
 type Tab = "inbox" | "explore" | "bookings" | "submit" | "profile";
-type BookDraft = { slug: string; listingUuid?: string; title: string; poojas: Pooja[]; devotee: string; phone: string; nakshatra: string; date: string; donation: string; code?: string };
+type BookDraft = { slug: string; listingUuid?: string; title: string; poojas: Pooja[]; devotee: string; phone: string; nakshatra: string; date: string; donation: string; collectPrasad: "counter" | "courier" | "exempt"; postage?: "normal"; code?: string };
 
 type View =
   | { name: "tab" }
