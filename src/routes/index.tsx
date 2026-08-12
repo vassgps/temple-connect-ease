@@ -19,7 +19,7 @@ import { TempleSearchBar } from "@/components/temple-search";
 
 import {
   authApi, bookingApi, discoverApi, listingApi, listOf, countOf, money, placeOf, errorText,
-  tokens, recaptchaConfigured, primeRecaptcha,
+  tokens, recaptchaConfigured, primeRecaptcha, openRazorpay,
   type Listing, type Pooja, type Me,
 } from "@/lib/api";
 
