@@ -1095,7 +1095,7 @@ function BookPayment({ draft, back, done }: { draft: BookDraft; back: () => void
           pooja_date: draft.date,
           pooja_slot: p.start_time ?? "",
           quantity: 1,
-          collect_prasad: false,
+          collect_prasad: true,
         })),
       };
       if (donation > 0) {
