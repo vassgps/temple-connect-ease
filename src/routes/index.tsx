@@ -992,7 +992,7 @@ function BookSelect({ slug, profile, back, next }: { slug: string; profile: Me; 
         <div className="flex-1"><div className="text-xs text-ink-soft">{chosen.length} pooja{chosen.length !== 1 ? "s" : ""} selected</div><div className="text-xl font-bold text-ink">{money(total)}</div></div>
         <button
           onClick={() => next({
-            slug, title: q.data?.title ?? "", poojas: chosen,
+            slug, listingUuid: q.data?.uuid, title: q.data?.title ?? "", poojas: chosen,
             devotee: nameOf(profile), phone: phoneOf(profile), nakshatra: "",
             date: new Date().toISOString().slice(0, 10), donation: "",
           })}
