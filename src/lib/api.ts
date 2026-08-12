@@ -468,7 +468,9 @@ export const bookingApi = {
   create: (body: Record<string, unknown>) => api.post("/api/v1/booking/public/", body),
   sendOtp: (body: Record<string, unknown>) => api.post("/api/v1/booking/otp/send/", body),
   verifyOtp: (body: Record<string, unknown>) => api.post("/api/v1/booking/otp/verify/", body),
-  checkout: (body: Record<string, unknown>) => api.post("/api/v1/booking/checkout/", body),
+  /** POST /api/v1/booking/{uuid}/checkout/ — returns gateway payload (unwrapped data). */
+  checkout: (bookingUuid: string, body: Record<string, unknown>) =>
+    api.post(`/api/v1/booking/${encodeURIComponent(bookingUuid)}/checkout/`, body),
   receipt: (code: string) => api.get(`/api/v1/booking/receipt/${code}/`) as Promise<Booking>,
   cancel: (uuid: string) => api.del(`/api/v1/booking/${uuid}/`),
 };
