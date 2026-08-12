@@ -1362,7 +1362,7 @@ function paidTotal(b: AnyRec): number | undefined {
   return undefined;
 }
 
-}
+
 
 /* ================= BOOKINGS ================= */
 type AnyRec = Record<string, unknown>;
