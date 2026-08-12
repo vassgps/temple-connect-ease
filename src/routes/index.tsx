@@ -19,7 +19,7 @@ import { TempleSearchBar } from "@/components/temple-search";
 
 import {
   authApi, bookingApi, discoverApi, listingApi, listOf, countOf, money, placeOf, errorText,
-  tokens, recaptchaConfigured, primeRecaptcha,
+  tokens, recaptchaConfigured, primeRecaptcha, openRazorpay,
   type Listing, type Pooja, type Me,
 } from "@/lib/api";
 
@@ -1109,9 +1109,11 @@ function BookPayment({ draft, back, done }: { draft: BookDraft; back: () => void
   const subtotal = draft.poojas.reduce((a, b) => a + Number(b.rate || 0), 0);
   const donation = Number(draft.donation || 0);
   const total = subtotal + donation;
+  const [stage, setStage] = useState<null | "booking" | "checkout" | "gateway" | "processing">(null);
 
   const pay = useMutation({
     mutationFn: async () => {
+      setStage("booking");
       const pooja_items = draft.poojas.map((p) => {
         const item: Record<string, unknown> = {
           pooja: p.uuid,
@@ -1148,18 +1150,65 @@ function BookPayment({ draft, back, done }: { draft: BookDraft; back: () => void
       };
 
       const code = created?.booking_code ?? created?.code;
-      const uuid = created?.booking_uuid ?? created?.uuid;
-      if (!code && !uuid) throw new Error("Booking created but no booking code was returned.");
+      const uuid = created?.booking_uuid ?? created?.uuid ?? code;
+      if (!code && !uuid) throw new Error("Booking created but no booking reference was returned.");
+      qc.invalidateQueries({ queryKey: ["bookings"] });
 
-      await bookingApi.checkout({ booking_code: code, booking_uuid: uuid });
-      if (!code) throw new Error("Booking created but no booking code was returned.");
+      /* ---- checkout ---- */
+      setStage("checkout");
+      const body: Record<string, unknown> = {
+        payment_method: "razorpay",
+        client_return_url: `${window.location.origin}/bookings`,
+      };
+      let checkout = (await bookingApi.checkout(String(uuid), body)) as Record<string, unknown>;
+      if (checkout?.requires_gateway_selection === true) {
+        checkout = (await bookingApi.checkout(String(uuid), {
+          ...body,
+          gateway: "razorpay",
+          payment_gateway: "razorpay",
+        })) as Record<string, unknown>;
+      }
+      if (import.meta.env.DEV) console.log("[booking] checkout response", checkout);
+
+      const key = checkout?.key as string | undefined;
+      const orderId = (checkout?.order_id ?? checkout?.razorpay_order_id) as string | undefined;
+      if (!key || !orderId) {
+        throw new Error(
+          (checkout?.message as string) ||
+            "Payment gateway is not available for this temple yet. Please try again later.",
+        );
+      }
+
+      setStage("gateway");
+      const result = await openRazorpay({
+        key,
+        order_id: orderId,
+        amount: (checkout.amount as number | string) ?? Math.round(total * 100),
+        currency: (checkout.currency as string) ?? "INR",
+        name: "TempleAddress",
+        description: draft.poojas.map((p) => p.name).join(", ") || draft.title,
+        prefill: (checkout.prefill as Record<string, unknown>) ?? { name: draft.devotee, contact: draft.phone },
+        notes: (checkout.notes as Record<string, unknown>) ?? {},
+      });
+      if (!result) throw new Error("Payment was cancelled before completion.");
+
+      setStage("processing");
+      if (!code) throw new Error("Payment submitted, but no booking code was returned.");
       return code;
     },
     onSuccess: (code) => {
       qc.invalidateQueries({ queryKey: ["bookings"] });
       done(code);
     },
+    onError: () => setStage(null),
   });
+
+  const label =
+    stage === "booking" ? "Creating booking…"
+    : stage === "checkout" ? "Preparing payment…"
+    : stage === "gateway" ? "Waiting for payment…"
+    : stage === "processing" ? "Confirming payment…"
+    : `Pay ${money(total)}`;
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -1183,13 +1232,14 @@ function BookPayment({ draft, back, done }: { draft: BookDraft; back: () => void
       </div>
       <div className="shrink-0 p-4 bg-card border-t border-border">
         <button onClick={() => pay.mutate()} disabled={pay.isPending} className="w-full h-14 rounded-2xl bg-earth text-primary-foreground font-bold shadow-soft flex items-center justify-center gap-2 disabled:opacity-50">
-          {pay.isPending ? <Loader2 className="size-5 animate-spin" /> : null} Pay {money(total)}
+          {pay.isPending ? <Loader2 className="size-5 animate-spin" /> : null} {label}
         </button>
         <div className="flex items-center justify-center gap-1.5 mt-3 text-xs text-ink-soft"><ShieldCheck className="size-3.5 text-verified" />Secured by <span className="font-bold text-[#3395FF]">Razorpay</span></div>
       </div>
     </div>
   );
 }
+
 
 function Row({ label, value, bold, muted, big }: { label: string; value: string; bold?: boolean; muted?: boolean; big?: boolean }) {
   return (
@@ -1201,16 +1251,36 @@ function Row({ label, value, bold, muted, big }: { label: string; value: string;
 }
 
 function BookReceipt({ code, home }: { code: string; home: () => void }) {
-  const q = useQuery({ queryKey: ["receipt", code], queryFn: () => bookingApi.receipt(code) });
-  const b = q.data;
+  const [tries, setTries] = useState(0);
+  const q = useQuery({
+    queryKey: ["receipt", code],
+    queryFn: () => bookingApi.receipt(code),
+    refetchInterval: (query) => {
+      const d = query.state.data as AnyRec | undefined;
+      return d && !isPaid(d) && tries < 10 ? 3000 : false;
+    },
+  });
+
+  useEffect(() => {
+    if (q.data) setTries((t) => t + 1);
+  }, [q.dataUpdatedAt, q.data]);
+
+  const b = q.data as (AnyRec & { items?: AnyRec[] }) | undefined;
+  const paid = b ? isPaid(b) : false;
+  const paidAmount = b ? paidTotal(b) : undefined;
+  const status = b ? (s(b.status) ?? s(b.payment_status) ?? "payment_pending") : "";
+  const settling = Boolean(b) && !paid && tries < 10;
+
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-card">
       <div className="px-5 pt-5 pb-4 flex items-center justify-between shrink-0">
         <button onClick={home} className="text-sm text-ink-soft font-semibold">← Back to Bookings</button>
-        <div className="flex gap-2">
-          <button className="size-9 rounded-full bg-muted grid place-items-center"><Download className="size-4 text-ink" /></button>
-          <button className="size-9 rounded-full bg-verified grid place-items-center"><Share2 className="size-4 text-white" /></button>
-        </div>
+        {paid && (
+          <div className="flex gap-2">
+            <button className="size-9 rounded-full bg-muted grid place-items-center"><Download className="size-4 text-ink" /></button>
+            <button className="size-9 rounded-full bg-verified grid place-items-center"><Share2 className="size-4 text-white" /></button>
+          </div>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-4">
         {q.isLoading && <Loading label="Fetching receipt…" />}
@@ -1218,22 +1288,46 @@ function BookReceipt({ code, home }: { code: string; home: () => void }) {
         {b && (
           <>
             <div className="text-center py-4">
-              <div className="mx-auto size-16 rounded-full bg-verified grid place-items-center mb-3 shadow-soft"><Check className="size-8 text-white" strokeWidth={3} /></div>
-              <div className="font-serif text-2xl text-ink">Booking {b.status ?? "Confirmed"}</div>
-              <div className="font-ml text-sm text-ink-soft mt-1">നിങ്ങളുടെ ബുക്കിംഗ് സ്ഥിരീകരിച്ചു</div>
+              {paid ? (
+                <>
+                  <div className="mx-auto size-16 rounded-full bg-verified grid place-items-center mb-3 shadow-soft"><Check className="size-8 text-white" strokeWidth={3} /></div>
+                  <div className="font-serif text-2xl text-ink">Booking Confirmed</div>
+                  <div className="font-ml text-sm text-ink-soft mt-1">നിങ്ങളുടെ ബുക്കിംഗ് സ്ഥിരീകരിച്ചു</div>
+                </>
+              ) : (
+                <>
+                  <div className="mx-auto size-16 rounded-full bg-gold/25 ring-1 ring-gold grid place-items-center mb-3">
+                    {settling ? <Loader2 className="size-7 text-earth animate-spin" /> : <Bell className="size-7 text-earth" />}
+                  </div>
+                  <div className="font-serif text-2xl text-ink">{settling ? "Payment processing" : "Payment pending"}</div>
+                  <p className="text-sm text-ink-soft mt-1 px-6">
+                    {settling
+                      ? "We are confirming your payment with the bank. This can take a few moments."
+                      : "Your booking is saved but the payment has not been confirmed yet."}
+                  </p>
+                  <button onClick={() => { setTries(0); q.refetch(); }} className="mt-3 h-10 px-5 rounded-xl bg-muted text-sm font-semibold text-ink">
+                    Check again
+                  </button>
+                </>
+              )}
             </div>
             <div className="rounded-3xl bg-cream ring-1 ring-border overflow-hidden">
               <div className="p-4 border-b border-dashed border-border">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-ink-soft">Booking Receipt</div>
-                <div className="font-serif text-lg text-earth mt-1">{b.listing_title ?? b.temple_name ?? "TempleAddress"}</div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-ink-soft">Booking {paid ? "Receipt" : "Summary"}</div>
+                <div className="font-serif text-lg text-earth mt-1">{s(b.listing_title) ?? s(b.temple_name) ?? "TempleAddress"}</div>
               </div>
               <div className="p-4 space-y-2 text-sm">
-                <Row label="Booking Code" value={b.booking_code ?? code} />
-                {(b.pooja_date ?? b.booking_date) && <Row label="Pooja Date" value={String(b.pooja_date ?? b.booking_date)} />}
-                {b.devotee_name && <Row label="Devotee" value={b.devotee_name} />}
-                {(b.items ?? []).map((it, i) => <Row key={i} label={it.pooja_name ?? it.name ?? "Pooja"} value={money(it.amount ?? 0)} muted />)}
+                <Row label="Booking Code" value={s(b.booking_code) ?? code} />
+                <Row label="Status" value={String(status).replace(/_/g, " ")} />
+                {(s(b.pooja_date) ?? s(b.booking_date)) && <Row label="Pooja Date" value={String(s(b.pooja_date) ?? s(b.booking_date))} />}
+                {s(b.devotee_name) && <Row label="Devotee" value={String(s(b.devotee_name))} />}
+                {bookingItems(b).map((it, i) => <Row key={i} label={s(it.pooja_name) ?? s(it.name) ?? "Pooja"} value={money(num(it.amount) ?? 0)} muted />)}
               </div>
-              <div className="p-4 bg-earth-soft/60 border-t border-dashed border-border"><Row label="Total Paid" value={money(b.total_amount ?? 0)} big bold /></div>
+              <div className="p-4 bg-earth-soft/60 border-t border-dashed border-border">
+                {paid
+                  ? <Row label="Total Paid" value={money(paidAmount ?? 0)} big bold />
+                  : <Row label="Amount Due" value={money(bookingAmount(b) ?? 0)} big bold />}
+              </div>
             </div>
           </>
         )}
@@ -1241,6 +1335,34 @@ function BookReceipt({ code, home }: { code: string; home: () => void }) {
     </div>
   );
 }
+
+/** Paid only when the backend says so — never inferred locally. */
+function isPaid(b: AnyRec): boolean {
+  const pay = b.payment as AnyRec | undefined;
+  const ps = (s(b.payment_status) ?? s(pay?.status) ?? "").toLowerCase();
+  const st = (s(b.status) ?? "").toLowerCase();
+  if (["success", "paid", "captured", "completed"].includes(ps)) return true;
+  return ["confirmed", "completed", "success"].includes(st);
+}
+
+/** Total actually paid, taken from backend transaction data. */
+function paidTotal(b: AnyRec): number | undefined {
+  const pay = b.payment as AnyRec | undefined;
+  const rb = b.receipt_breakdown as AnyRec | undefined;
+  const txns = (Array.isArray(b.transactions) ? b.transactions : []) as AnyRec[];
+  const paidTxn = txns.filter((t) => ["success", "paid", "captured"].includes((s(t.status) ?? "").toLowerCase()));
+  if (paidTxn.length) {
+    const sum = paidTxn.reduce((a, t) => a + (num(t.amount) ?? 0), 0);
+    if (sum > 0) return sum;
+  }
+  for (const c of [pay?.total_paid, pay?.amount_paid, b.total_paid, b.amount_paid, rb?.total_paid]) {
+    const n = num(c);
+    if (n !== undefined) return n;
+  }
+  return undefined;
+}
+
+
 
 /* ================= BOOKINGS ================= */
 type AnyRec = Record<string, unknown>;
